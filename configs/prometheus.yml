@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "order-service"
+    static_configs:
+      - targets: ["order-service:8080"]
+
+  - job_name: "delivery-service"
+    static_configs:
+      - targets: ["delivery-service:8080"]
+
+  - job_name: "tracking-service"
+    static_configs:
+      - targets: ["tracking-service:8080"]
+
+  - job_name: "notification-service"
+    static_configs:
+      - targets: ["notification-service:8080"]
+
+  - job_name: "api-gateway"
+    static_configs:
+      - targets: ["api-gateway:8080"]

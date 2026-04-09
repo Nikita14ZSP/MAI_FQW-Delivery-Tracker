@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+package delivery.v1;
+
+option go_package = "github.com/mozgovojnikita/delivery-tracker/gen/delivery/v1;deliveryv1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/v1/types.proto";
+
+// DeliveryStatus represents the current state of a delivery.
+enum DeliveryStatus {
+  DELIVERY_STATUS_UNSPECIFIED = 0;
+  DELIVERY_STATUS_PENDING = 1;
+  DELIVERY_STATUS_ASSIGNED = 2;
+  DELIVERY_STATUS_PICKED_UP = 3;
+  DELIVERY_STATUS_IN_TRANSIT = 4;
+  DELIVERY_STATUS_DELIVERED = 5;
+  DELIVERY_STATUS_FAILED = 6;
+}
+
+// Delivery represents a delivery assignment for an order.
+message Delivery {
+  string id = 1;
+  string order_id = 2;
+  string courier_id = 3;
+  DeliveryStatus status = 4;
+  string zone_id = 5;
+  google.protobuf.Timestamp estimated_delivery = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// DeliveryZone represents a geographic delivery zone.
+message DeliveryZone {
+  string id = 1;
+  string name = 2;
+  string polygon_geojson = 3;
+}
+
+// AssignCourierRequest is the request message for AssignCourier RPC.
+message AssignCourierRequest {
+  string order_id = 1;
+  string zone_id = 2;
+  string courier_id = 3;  // Optional: if set, manual admin assignment (DLVR-01); if empty, zone-based auto-assignment (DLVR-02)
+}
+
+// AssignCourierResponse is the response message for AssignCourier RPC.
+message AssignCourierResponse {
+  Delivery delivery = 1;
+}
+
+// GetDeliveryRequest is the request message for GetDelivery RPC.
+message GetDeliveryRequest {
+  string id = 1;
+}
+
+// GetDeliveryResponse is the response message for GetDelivery RPC.
+message GetDeliveryResponse {
+  Delivery delivery = 1;
+}
+
+// CreateZoneRequest is the request message for CreateZone RPC.
+message CreateZoneRequest {
+  string name = 1;
+  string polygon_geojson = 2;
+}
+
+// CreateZoneResponse is the response message for CreateZone RPC.
+message CreateZoneResponse {
+  DeliveryZone zone = 1;
+}
+
+// ListZonesRequest is the request message for ListZones RPC.
+message ListZonesRequest {
+  common.v1.Pagination pagination = 1;
+}
+
+// ListZonesResponse is the response message for ListZones RPC.
+message ListZonesResponse {
+  repeated DeliveryZone zones = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+// AssignCourierToZoneRequest is the request message for AssignCourierToZone RPC.
+message AssignCourierToZoneRequest {
+  string courier_id = 1;
+  string zone_id = 2;
+}
+
+// AssignCourierToZoneResponse is the response message for AssignCourierToZone RPC.
+message AssignCourierToZoneResponse {
+  bool success = 1;
+}
+
+// GetDeliveriesByCourierRequest is the request message for GetDeliveriesByCourier RPC.
+message GetDeliveriesByCourierRequest {
+  string courier_id = 1;
+}
+
+// GetDeliveriesByCourierResponse is the response message for GetDeliveriesByCourier RPC.
+message GetDeliveriesByCourierResponse {
+  repeated Delivery deliveries = 1;
+}
+
+// RateCourierRequest is the request for rating a courier after delivery.
+message RateCourierRequest {
+  string delivery_id = 1;
+  int32 stars = 2;    // 1-5
+  string comment = 3; // optional
+}
+
+// RateCourierResponse is the response after submitting a rating.
+message RateCourierResponse {
+  string rating_id = 1;
+}
+
+// GetCourierRatingRequest is the request for retrieving a courier's rating.
+message GetCourierRatingRequest {
+  string courier_id = 1;
+}
+
+// CourierRatingEntry is a single rating entry.
+message CourierRatingEntry {
+  string delivery_id = 1;
+  int32 stars = 2;
+  string comment = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// GetCourierRatingResponse is the response with courier rating data.
+message GetCourierRatingResponse {
+  double average_stars = 1;
+  int32 total_ratings = 2;
+  repeated CourierRatingEntry ratings = 3;
+}
+
+// HealthRequest is the request message for GetHealth RPC.
+message HealthRequest {}
+
+// HealthResponse is the response message for GetHealth RPC.
+message HealthResponse {
+  string status = 1;
+}
+
+// DeliveryService manages delivery assignments and zones.
+service DeliveryService {
+  // AssignCourier assigns a courier to an order. If courier_id is provided, performs manual assignment (DLVR-01).
+  // If courier_id is empty, automatically assigns the nearest available courier in the given zone (DLVR-02).
+  rpc AssignCourier(AssignCourierRequest) returns (AssignCourierResponse) {
+    option (google.api.http) = {
+      post: "/v1/deliveries/assign"
+      body: "*"
+    };
+  }
+
+  // GetDelivery retrieves a delivery by ID.
+  rpc GetDelivery(GetDeliveryRequest) returns (GetDeliveryResponse) {
+    option (google.api.http) = {
+      get: "/v1/deliveries/{id}"
+    };
+  }
+
+  // CreateZone creates a new delivery zone.
+  rpc CreateZone(CreateZoneRequest) returns (CreateZoneResponse) {
+    option (google.api.http) = {
+      post: "/v1/zones"
+      body: "*"
+    };
+  }
+
+  // ListZones retrieves all delivery zones.
+  rpc ListZones(ListZonesRequest) returns (ListZonesResponse) {
+    option (google.api.http) = {
+      get: "/v1/zones"
+    };
+  }
+
+  // AssignCourierToZone assigns a courier to operate in a specific zone.
+  rpc AssignCourierToZone(AssignCourierToZoneRequest) returns (AssignCourierToZoneResponse) {
+    option (google.api.http) = {
+      post: "/v1/zones/assign-courier"
+      body: "*"
+    };
+  }
+
+  // GetDeliveriesByCourier retrieves all deliveries for a specific courier.
+  rpc GetDeliveriesByCourier(GetDeliveriesByCourierRequest) returns (GetDeliveriesByCourierResponse) {
+    option (google.api.http) = {
+      get: "/v1/couriers/{courier_id}/deliveries"
+    };
+  }
+
+  // RateCourier submits a rating for a courier after delivery completion.
+  rpc RateCourier(RateCourierRequest) returns (RateCourierResponse) {
+    option (google.api.http) = {
+      post: "/v1/ratings"
+      body: "*"
+    };
+  }
+
+  // GetCourierRating retrieves a courier's average rating and individual reviews.
+  rpc GetCourierRating(GetCourierRatingRequest) returns (GetCourierRatingResponse) {
+    option (google.api.http) = {
+      get: "/v1/couriers/{courier_id}/rating"
+    };
+  }
+
+  // GetHealth checks the health of the delivery service.
+  rpc GetHealth(HealthRequest) returns (HealthResponse);
+}

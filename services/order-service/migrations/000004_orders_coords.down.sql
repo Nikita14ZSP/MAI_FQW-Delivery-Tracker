@@ -1,0 +1,2 @@
+ALTER TABLE orders DROP COLUMN IF EXISTS delivery_lng;
+ALTER TABLE orders DROP COLUMN IF EXISTS delivery_lat;

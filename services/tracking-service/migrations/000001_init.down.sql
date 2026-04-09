@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS location_history;
+DROP EXTENSION IF EXISTS postgis;

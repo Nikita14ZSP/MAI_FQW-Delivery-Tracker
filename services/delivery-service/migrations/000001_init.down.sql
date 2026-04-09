@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS courier_zones;
+DROP TABLE IF EXISTS delivery_zones;
+DROP TABLE IF EXISTS deliveries;
+DROP EXTENSION IF EXISTS postgis;

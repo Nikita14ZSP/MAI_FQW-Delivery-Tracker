@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package tracking.v1;
+
+option go_package = "github.com/mozgovojnikita/delivery-tracker/gen/tracking/v1;trackingv1";
+
+import "google/protobuf/timestamp.proto";
+import "common/v1/types.proto";
+import "google/api/annotations.proto";
+
+// LocationUpdate represents a courier's location update.
+message LocationUpdate {
+  string courier_id = 1;
+  string order_id = 2;
+  common.v1.Coordinates coordinates = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// TrackingEvent represents a tracking event for an order.
+message TrackingEvent {
+  string order_id = 1;
+  string event_type = 2;
+  string payload = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// UpdateLocationRequest is the request message for UpdateLocation RPC.
+message UpdateLocationRequest {
+  string courier_id = 1;
+  string order_id = 2;
+  common.v1.Coordinates coordinates = 3;
+}
+
+// UpdateLocationResponse is the response message for UpdateLocation RPC.
+message UpdateLocationResponse {
+  bool success = 1;
+}
+
+// GetCourierLocationRequest is the request message for GetCourierLocation RPC.
+message GetCourierLocationRequest {
+  string courier_id = 1;
+}
+
+// GetCourierLocationResponse is the response message for GetCourierLocation RPC.
+message GetCourierLocationResponse {
+  LocationUpdate location = 1;
+}
+
+// GetLocationHistoryRequest is the request message for GetLocationHistory RPC.
+message GetLocationHistoryRequest {
+  string courier_id = 1;
+  string order_id = 2;
+  int32 limit = 3;
+}
+
+// GetLocationHistoryResponse is the response message for GetLocationHistory RPC.
+message GetLocationHistoryResponse {
+  repeated LocationUpdate locations = 1;
+}
+
+// HealthRequest is the request message for GetHealth RPC.
+message HealthRequest {}
+
+// HealthResponse is the response message for GetHealth RPC.
+message HealthResponse {
+  string status = 1;
+}
+
+// TrackingService manages real-time courier location tracking.
+service TrackingService {
+  // UpdateLocation updates the current position of a courier.
+  rpc UpdateLocation(UpdateLocationRequest) returns (UpdateLocationResponse) {
+    option (google.api.http) = {
+      post: "/v1/tracking/location"
+      body: "*"
+    };
+  }
+
+  // GetCourierLocation retrieves the last known location of a courier.
+  rpc GetCourierLocation(GetCourierLocationRequest) returns (GetCourierLocationResponse) {
+    option (google.api.http) = {
+      get: "/v1/tracking/couriers/{courier_id}/location"
+    };
+  }
+
+  // GetLocationHistory retrieves the location history for a courier/order.
+  rpc GetLocationHistory(GetLocationHistoryRequest) returns (GetLocationHistoryResponse) {
+    option (google.api.http) = {
+      get: "/v1/tracking/history/{courier_id}"
+    };
+  }
+
+  // GetHealth checks the health of the tracking service.
+  rpc GetHealth(HealthRequest) returns (HealthResponse);
+}

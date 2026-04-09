@@ -1,0 +1,764 @@
+basePath: /
+definitions:
+  services_api-gateway_internal_handler_http.AssignCourierSwaggerRequest:
+    properties:
+      courierId:
+        example: 770e8400-e29b-41d4-a716-446655440000
+        type: string
+      orderId:
+        example: 660e8400-e29b-41d4-a716-446655440000
+        type: string
+      zoneId:
+        example: 880e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.AssignCourierSwaggerResponse:
+    properties:
+      delivery:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.DeliveryModel'
+    type: object
+  services_api-gateway_internal_handler_http.AssignCourierToZoneSwaggerRequest:
+    properties:
+      courierId:
+        example: 770e8400-e29b-41d4-a716-446655440000
+        type: string
+      zoneId:
+        example: 880e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.AssignCourierToZoneSwaggerResponse:
+    properties:
+      success:
+        example: true
+        type: boolean
+    type: object
+  services_api-gateway_internal_handler_http.AuthResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      refresh_token:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      user:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.UserInfo'
+    type: object
+  services_api-gateway_internal_handler_http.CancelOrderSwaggerRequest:
+    properties:
+      reason:
+        example: Передумал
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.CancelOrderSwaggerResponse:
+    properties:
+      order:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderModel'
+    type: object
+  services_api-gateway_internal_handler_http.CoordinatesModel:
+    properties:
+      latitude:
+        example: 55.7558
+        type: number
+      longitude:
+        example: 37.6173
+        type: number
+    type: object
+  services_api-gateway_internal_handler_http.CreateOrderSwaggerRequest:
+    properties:
+      contact_phone:
+        example: "+79001234567"
+        type: string
+      delivery_address:
+        example: ул. Пушкина 10, Москва
+        type: string
+      delivery_coordinates:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.CoordinatesModel'
+      items:
+        items:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderItemModel'
+        type: array
+      payment_method:
+        example: card
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.CreateOrderSwaggerResponse:
+    properties:
+      order:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderModel'
+    type: object
+  services_api-gateway_internal_handler_http.CreateZoneSwaggerRequest:
+    properties:
+      name:
+        example: Центральная Москва
+        type: string
+      polygonGeojson:
+        example: '{"type":"Polygon","coordinates":[[[37.5,55.7],[37.7,55.7],[37.7,55.8],[37.5,55.8],[37.5,55.7]]]}'
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.CreateZoneSwaggerResponse:
+    properties:
+      zone:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.DeliveryZoneModel'
+    type: object
+  services_api-gateway_internal_handler_http.DeliveryModel:
+    properties:
+      courierId:
+        example: 770e8400-e29b-41d4-a716-446655440000
+        type: string
+      createdAt:
+        example: "2026-03-29T10:00:00Z"
+        type: string
+      estimatedDelivery:
+        example: "2026-03-29T12:00:00Z"
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      orderId:
+        example: 660e8400-e29b-41d4-a716-446655440000
+        type: string
+      status:
+        example: DELIVERY_STATUS_ASSIGNED
+        type: string
+      zoneId:
+        example: 880e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.DeliveryZoneModel:
+    properties:
+      id:
+        example: 880e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: Центральная Москва
+        type: string
+      polygonGeojson:
+        example: '{"type":"Polygon","coordinates":[[[37.5,55.7],[37.7,55.7],[37.7,55.8],[37.5,55.8],[37.5,55.7]]]}'
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.ErrorResponse:
+    properties:
+      error:
+        example: invalid input
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.GetDeliverySwaggerResponse:
+    properties:
+      delivery:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.DeliveryModel'
+    type: object
+  services_api-gateway_internal_handler_http.GetNotificationSwaggerResponse:
+    properties:
+      notification:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.NotificationModel'
+    type: object
+  services_api-gateway_internal_handler_http.GetOrderSwaggerResponse:
+    properties:
+      order:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderModel'
+    type: object
+  services_api-gateway_internal_handler_http.ListOrdersSwaggerResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderModel'
+        type: array
+    type: object
+  services_api-gateway_internal_handler_http.ListZonesSwaggerResponse:
+    properties:
+      zones:
+        items:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.DeliveryZoneModel'
+        type: array
+    type: object
+  services_api-gateway_internal_handler_http.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: mypassword123
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.NotificationModel:
+    properties:
+      channel:
+        example: email
+        type: string
+      createdAt:
+        example: "2026-03-29T10:00:00Z"
+        type: string
+      id:
+        example: 990e8400-e29b-41d4-a716-446655440000
+        type: string
+      status:
+        example: NOTIFICATION_STATUS_SENT
+        type: string
+      templateName:
+        example: order_confirmed
+        type: string
+      templateVars:
+        additionalProperties:
+          type: string
+        example:
+          order_id: "123"
+          status: confirmed
+        type: object
+      userId:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.OrderItemModel:
+    properties:
+      name:
+        example: Pizza Margherita
+        type: string
+      price:
+        example: 500
+        type: number
+      quantity:
+        example: 2
+        type: integer
+    type: object
+  services_api-gateway_internal_handler_http.OrderModel:
+    properties:
+      contactPhone:
+        example: "+79001234567"
+        type: string
+      createdAt:
+        example: "2026-03-29T10:00:00Z"
+        type: string
+      deliveryAddress:
+        example: ул. Пушкина 10, Москва
+        type: string
+      deliveryCoordinates:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.CoordinatesModel'
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderItemModel'
+        type: array
+      paymentMethod:
+        example: card
+        type: string
+      status:
+        example: ORDER_STATUS_CREATED
+        type: string
+      updatedAt:
+        example: "2026-03-29T10:00:00Z"
+        type: string
+      userId:
+        example: 660e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.RefreshRequest:
+    properties:
+      refresh_token:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      first_name:
+        example: Никита
+        type: string
+      last_name:
+        example: Мозговой
+        type: string
+      password:
+        example: mypassword123
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.SendNotificationSwaggerRequest:
+    properties:
+      channel:
+        example: email
+        type: string
+      templateName:
+        example: order_confirmed
+        type: string
+      templateVars:
+        additionalProperties:
+          type: string
+        type: object
+      userId:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.SendNotificationSwaggerResponse:
+    properties:
+      notification:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.NotificationModel'
+    type: object
+  services_api-gateway_internal_handler_http.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs...
+        type: string
+      refresh_token:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.UpdateOrderStatusSwaggerRequest:
+    properties:
+      status:
+        example: ORDER_STATUS_CONFIRMED
+        type: string
+    type: object
+  services_api-gateway_internal_handler_http.UpdateOrderStatusSwaggerResponse:
+    properties:
+      order:
+        $ref: '#/definitions/services_api-gateway_internal_handler_http.OrderModel'
+    type: object
+  services_api-gateway_internal_handler_http.UserInfo:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      first_name:
+        example: Никита
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      last_name:
+        example: Мозговой
+        type: string
+      role:
+        example: user
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API for the Delivery Tracker microservice platform
+  title: Delivery Tracker API
+  version: "1.0"
+paths:
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password, receive JWT tokens
+      parameters:
+      - description: Login payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      summary: Log in with credentials
+      tags:
+      - auth
+  /v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid refresh token for a new token pair
+      parameters:
+      - description: Refresh payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.TokenResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with email, password, first name and
+        last name
+      parameters:
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /v1/deliveries/{id}:
+    get:
+      description: Retrieve delivery details including courier, status and ETA
+      parameters:
+      - description: Delivery ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.GetDeliverySwaggerResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get delivery by ID
+      tags:
+      - deliveries
+  /v1/deliveries/assign:
+    post:
+      consumes:
+      - application/json
+      description: Manual assignment (provide courier_id) or auto-assignment (leave
+        courier_id empty, system finds nearest in zone via PostGIS)
+      parameters:
+      - description: Assignment request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.AssignCourierSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.AssignCourierSwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign courier to delivery
+      tags:
+      - deliveries
+  /v1/notifications/{id}:
+    get:
+      description: Retrieve notification details by ID
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.GetNotificationSwaggerResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notification by ID
+      tags:
+      - notifications
+  /v1/notifications/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a notification to a user using a template. Normally triggered
+        by Kafka events, but can be called directly.
+      parameters:
+      - description: Notification request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.SendNotificationSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.SendNotificationSwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a notification
+      tags:
+      - notifications
+  /v1/orders:
+    get:
+      description: Retrieve a list of orders for the authenticated user
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Filter by status (e.g. ORDER_STATUS_CREATED)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ListOrdersSwaggerResponse'
+      security:
+      - BearerAuth: []
+      summary: List orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Create a delivery order with address, coordinates, items and payment
+        method
+      parameters:
+      - description: Order data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.CreateOrderSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.CreateOrderSwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new order
+      tags:
+      - orders
+  /v1/orders/{id}:
+    get:
+      description: Retrieve order details by ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.GetOrderSwaggerResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get order by ID
+      tags:
+      - orders
+  /v1/orders/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancel an eligible order with an optional reason
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Cancel reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.CancelOrderSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.CancelOrderSwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel an order
+      tags:
+      - orders
+  /v1/orders/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Transition order to a new status following the state machine rules
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.UpdateOrderStatusSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.UpdateOrderStatusSwaggerResponse'
+        "400":
+          description: Invalid status transition
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update order status
+      tags:
+      - orders
+  /v1/zones:
+    get:
+      description: Retrieve all delivery zones
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ListZonesSwaggerResponse'
+      security:
+      - BearerAuth: []
+      summary: List delivery zones
+      tags:
+      - zones
+    post:
+      consumes:
+      - application/json
+      description: Create a new delivery zone with a GeoJSON polygon boundary
+      parameters:
+      - description: Zone definition
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.CreateZoneSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.CreateZoneSwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create delivery zone
+      tags:
+      - zones
+  /v1/zones/assign-courier:
+    post:
+      consumes:
+      - application/json
+      description: Assign a courier to operate in a specific delivery zone
+      parameters:
+      - description: Assignment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services_api-gateway_internal_handler_http.AssignCourierToZoneSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.AssignCourierToZoneSwaggerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/services_api-gateway_internal_handler_http.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign courier to zone
+      tags:
+      - zones
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+package order.v1;
+
+option go_package = "github.com/mozgovojnikita/delivery-tracker/gen/order/v1;orderv1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "common/v1/types.proto";
+
+// OrderStatus represents the current state of an order.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_CREATED = 1;
+  ORDER_STATUS_CONFIRMED = 2;
+  ORDER_STATUS_ASSIGNED = 3;
+  ORDER_STATUS_PICKED_UP = 4;
+  ORDER_STATUS_IN_TRANSIT = 5;
+  ORDER_STATUS_DELIVERED = 6;
+  ORDER_STATUS_CANCELLED = 7;
+  ORDER_STATUS_FAILED = 8;
+  ORDER_STATUS_RETURNED = 9;
+}
+
+// Order represents a delivery order.
+message Order {
+  string id = 1;
+  string user_id = 2;
+  OrderStatus status = 3;
+  string delivery_address = 4;
+  common.v1.Coordinates delivery_coordinates = 5;
+  repeated OrderItem items = 6;
+  string contact_phone = 7;
+  string payment_method = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+// OrderItem represents a single item within an order.
+message OrderItem {
+  string name = 1;
+  int32 quantity = 2;
+  double price = 3;
+}
+
+// CreateOrderRequest is the request message for CreateOrder RPC.
+message CreateOrderRequest {
+  string user_id = 1;
+  string delivery_address = 2;
+  common.v1.Coordinates delivery_coordinates = 3;
+  repeated OrderItem items = 4;
+  string contact_phone = 5;
+  string payment_method = 6;
+}
+
+// CreateOrderResponse is the response message for CreateOrder RPC.
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+// GetOrderRequest is the request message for GetOrder RPC.
+message GetOrderRequest {
+  string id = 1;
+}
+
+// GetOrderResponse is the response message for GetOrder RPC.
+message GetOrderResponse {
+  Order order = 1;
+}
+
+// ListOrdersRequest is the request message for ListOrders RPC.
+message ListOrdersRequest {
+  string user_id = 1;
+  OrderStatus status = 2;
+  common.v1.Pagination pagination = 3;
+}
+
+// ListOrdersResponse is the response message for ListOrders RPC.
+message ListOrdersResponse {
+  repeated Order orders = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+// UpdateOrderStatusRequest is the request message for UpdateOrderStatus RPC.
+message UpdateOrderStatusRequest {
+  string id = 1;
+  OrderStatus status = 2;
+}
+
+// UpdateOrderStatusResponse is the response message for UpdateOrderStatus RPC.
+message UpdateOrderStatusResponse {
+  Order order = 1;
+}
+
+// CancelOrderRequest is the request message for CancelOrder RPC.
+message CancelOrderRequest {
+  string id = 1;
+  string reason = 2;
+}
+
+// CancelOrderResponse is the response message for CancelOrder RPC.
+message CancelOrderResponse {
+  Order order = 1;
+}
+
+// HealthRequest is the request message for GetHealth RPC.
+message HealthRequest {}
+
+// HealthResponse is the response message for GetHealth RPC.
+message HealthResponse {
+  string status = 1;
+}
+
+// OrderService manages order lifecycle.
+service OrderService {
+  // CreateOrder creates a new delivery order.
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/orders"
+      body: "*"
+    };
+  }
+
+  // GetOrder retrieves a specific order by ID.
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {
+    option (google.api.http) = {
+      get: "/v1/orders/{id}"
+    };
+  }
+
+  // ListOrders retrieves a list of orders.
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
+    option (google.api.http) = {
+      get: "/v1/orders"
+    };
+  }
+
+  // UpdateOrderStatus updates the status of an order.
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (UpdateOrderStatusResponse) {
+    option (google.api.http) = {
+      patch: "/v1/orders/{id}/status"
+      body: "*"
+    };
+  }
+
+  // CancelOrder cancels an existing order.
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/orders/{id}/cancel"
+      body: "*"
+    };
+  }
+
+  // GetHealth checks the health of the order service.
+  rpc GetHealth(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/health"
+    };
+  }
+}

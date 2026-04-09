@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package notification.v1;
+
+option go_package = "github.com/mozgovojnikita/delivery-tracker/gen/notification/v1;notificationv1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+// NotificationStatus represents the delivery status of a notification.
+enum NotificationStatus {
+  NOTIFICATION_STATUS_UNSPECIFIED = 0;
+  NOTIFICATION_STATUS_PENDING = 1;
+  NOTIFICATION_STATUS_SENT = 2;
+  NOTIFICATION_STATUS_FAILED = 3;
+}
+
+// Notification represents a notification sent to a user.
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string channel = 3;
+  string template_name = 4;
+  map<string, string> template_vars = 5;
+  NotificationStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// SendNotificationRequest is the request message for SendNotification RPC.
+message SendNotificationRequest {
+  string user_id = 1;
+  string channel = 2;
+  string template_name = 3;
+  map<string, string> template_vars = 4;
+}
+
+// SendNotificationResponse is the response message for SendNotification RPC.
+message SendNotificationResponse {
+  Notification notification = 1;
+}
+
+// GetNotificationRequest is the request message for GetNotification RPC.
+message GetNotificationRequest {
+  string id = 1;
+}
+
+// GetNotificationResponse is the response message for GetNotification RPC.
+message GetNotificationResponse {
+  Notification notification = 1;
+}
+
+// HealthRequest is the request message for GetHealth RPC.
+message HealthRequest {}
+
+// HealthResponse is the response message for GetHealth RPC.
+message HealthResponse {
+  string status = 1;
+}
+
+// NotificationService manages sending notifications to users.
+service NotificationService {
+  // SendNotification sends a notification to a user via the specified channel.
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse) {
+    option (google.api.http) = {
+      post: "/v1/notifications/send"
+      body: "*"
+    };
+  }
+
+  // GetNotification retrieves a notification by ID.
+  rpc GetNotification(GetNotificationRequest) returns (GetNotificationResponse) {
+    option (google.api.http) = {
+      get: "/v1/notifications/{id}"
+    };
+  }
+
+  // GetHealth checks the health of the notification service.
+  rpc GetHealth(HealthRequest) returns (HealthResponse);
+}

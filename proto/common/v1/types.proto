@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/mozgovojnikita/delivery-tracker/gen/common/v1;commonv1";
+
+// Coordinates represents geographic coordinates.
+message Coordinates {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+// Pagination contains pagination parameters.
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// PaginationResponse contains pagination metadata in responses.
+message PaginationResponse {
+  int32 total = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
