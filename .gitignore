@@ -11,6 +11,7 @@
 *.test
 *.out
 coverage.html
+coverage.out
 
 # IDE
 .idea/
@@ -32,3 +33,11 @@ grafana_data/
 
 # Go
 vendor/
+
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+

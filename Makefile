@@ -75,3 +75,7 @@ test-load:
 
 test-stress:
 	docker run --rm -i --network host grafana/k6 run - < tests/k6/stress.js
+
+# DATA-02: one-time cleanup of load-test orders (idempotent, safe to re-run).
+clean-loadtest:
+	docker compose exec -T postgres psql -U tracker -d tracker -f /dev/stdin < scripts/cleanup-loadtest-orders.sql
