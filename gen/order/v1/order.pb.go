@@ -108,8 +108,10 @@ type Order struct {
 	PaymentMethod       string                 `protobuf:"bytes,8,opt,name=payment_method,json=paymentMethod,proto3" json:"payment_method,omitempty"`
 	CreatedAt           *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt           *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// BKND-04: ID of associated delivery (empty if no delivery yet). Populated via cross-service lookup in GetOrder.
+	DeliveryId    string `protobuf:"bytes,11,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Order) Reset() {
@@ -210,6 +212,13 @@ func (x *Order) GetUpdatedAt() *timestamppb.Timestamp {
 		return x.UpdatedAt
 	}
 	return nil
+}
+
+func (x *Order) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
 }
 
 // OrderItem represents a single item within an order.
@@ -803,6 +812,333 @@ func (x *CancelOrderResponse) GetOrder() *Order {
 	return nil
 }
 
+// GetOrdersByIDsRequest is the request for bulk-fetch used by delivery-service (BKND-02 enrichment).
+type GetOrdersByIDsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrderIds      []string               `protobuf:"bytes,1,rep,name=order_ids,json=orderIds,proto3" json:"order_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOrdersByIDsRequest) Reset() {
+	*x = GetOrdersByIDsRequest{}
+	mi := &file_order_v1_order_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOrdersByIDsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOrdersByIDsRequest) ProtoMessage() {}
+
+func (x *GetOrdersByIDsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_v1_order_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOrdersByIDsRequest.ProtoReflect.Descriptor instead.
+func (*GetOrdersByIDsRequest) Descriptor() ([]byte, []int) {
+	return file_order_v1_order_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetOrdersByIDsRequest) GetOrderIds() []string {
+	if x != nil {
+		return x.OrderIds
+	}
+	return nil
+}
+
+// OrderPreviewSlim is a lightweight order summary used by delivery-service ListAvailableOrders.
+type OrderPreviewSlim struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	OrderId         string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	TotalPrice      float64                `protobuf:"fixed64,2,opt,name=total_price,json=totalPrice,proto3" json:"total_price,omitempty"`
+	ItemsCount      int32                  `protobuf:"varint,3,opt,name=items_count,json=itemsCount,proto3" json:"items_count,omitempty"`
+	DeliveryAddress string                 `protobuf:"bytes,4,opt,name=delivery_address,json=deliveryAddress,proto3" json:"delivery_address,omitempty"`
+	Items           []*OrderItem           `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"` // CRDR-07: order composition before accept (Phase 13)
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *OrderPreviewSlim) Reset() {
+	*x = OrderPreviewSlim{}
+	mi := &file_order_v1_order_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrderPreviewSlim) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrderPreviewSlim) ProtoMessage() {}
+
+func (x *OrderPreviewSlim) ProtoReflect() protoreflect.Message {
+	mi := &file_order_v1_order_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrderPreviewSlim.ProtoReflect.Descriptor instead.
+func (*OrderPreviewSlim) Descriptor() ([]byte, []int) {
+	return file_order_v1_order_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *OrderPreviewSlim) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+func (x *OrderPreviewSlim) GetTotalPrice() float64 {
+	if x != nil {
+		return x.TotalPrice
+	}
+	return 0
+}
+
+func (x *OrderPreviewSlim) GetItemsCount() int32 {
+	if x != nil {
+		return x.ItemsCount
+	}
+	return 0
+}
+
+func (x *OrderPreviewSlim) GetDeliveryAddress() string {
+	if x != nil {
+		return x.DeliveryAddress
+	}
+	return ""
+}
+
+func (x *OrderPreviewSlim) GetItems() []*OrderItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// GetOrdersByIDsResponse returns a list of slim order previews.
+type GetOrdersByIDsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Orders        []*OrderPreviewSlim    `protobuf:"bytes,1,rep,name=orders,proto3" json:"orders,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOrdersByIDsResponse) Reset() {
+	*x = GetOrdersByIDsResponse{}
+	mi := &file_order_v1_order_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOrdersByIDsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOrdersByIDsResponse) ProtoMessage() {}
+
+func (x *GetOrdersByIDsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_order_v1_order_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOrdersByIDsResponse.ProtoReflect.Descriptor instead.
+func (*GetOrdersByIDsResponse) Descriptor() ([]byte, []int) {
+	return file_order_v1_order_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetOrdersByIDsResponse) GetOrders() []*OrderPreviewSlim {
+	if x != nil {
+		return x.Orders
+	}
+	return nil
+}
+
+// GetUsersByIDsRequest is an internal bulk-fetch used by delivery-service to
+// resolve courier first_name/last_name from the users table. RATE-05.
+type GetUsersByIDsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUsersByIDsRequest) Reset() {
+	*x = GetUsersByIDsRequest{}
+	mi := &file_order_v1_order_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUsersByIDsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUsersByIDsRequest) ProtoMessage() {}
+
+func (x *GetUsersByIDsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_v1_order_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUsersByIDsRequest.ProtoReflect.Descriptor instead.
+func (*GetUsersByIDsRequest) Descriptor() ([]byte, []int) {
+	return file_order_v1_order_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetUsersByIDsRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+// UserSlim is a lightweight user summary returned by GetUsersByIDs.
+type UserSlim struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserSlim) Reset() {
+	*x = UserSlim{}
+	mi := &file_order_v1_order_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserSlim) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserSlim) ProtoMessage() {}
+
+func (x *UserSlim) ProtoReflect() protoreflect.Message {
+	mi := &file_order_v1_order_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserSlim.ProtoReflect.Descriptor instead.
+func (*UserSlim) Descriptor() ([]byte, []int) {
+	return file_order_v1_order_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *UserSlim) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UserSlim) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *UserSlim) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
+func (x *UserSlim) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+// GetUsersByIDsResponse returns a list of slim user records.
+type GetUsersByIDsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*UserSlim            `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUsersByIDsResponse) Reset() {
+	*x = GetUsersByIDsResponse{}
+	mi := &file_order_v1_order_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUsersByIDsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUsersByIDsResponse) ProtoMessage() {}
+
+func (x *GetUsersByIDsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_order_v1_order_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUsersByIDsResponse.ProtoReflect.Descriptor instead.
+func (*GetUsersByIDsResponse) Descriptor() ([]byte, []int) {
+	return file_order_v1_order_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetUsersByIDsResponse) GetUsers() []*UserSlim {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
 // HealthRequest is the request message for GetHealth RPC.
 type HealthRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -812,7 +1148,7 @@ type HealthRequest struct {
 
 func (x *HealthRequest) Reset() {
 	*x = HealthRequest{}
-	mi := &file_order_v1_order_proto_msgTypes[12]
+	mi := &file_order_v1_order_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -824,7 +1160,7 @@ func (x *HealthRequest) String() string {
 func (*HealthRequest) ProtoMessage() {}
 
 func (x *HealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_order_v1_order_proto_msgTypes[12]
+	mi := &file_order_v1_order_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -837,7 +1173,7 @@ func (x *HealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return file_order_v1_order_proto_rawDescGZIP(), []int{12}
+	return file_order_v1_order_proto_rawDescGZIP(), []int{18}
 }
 
 // HealthResponse is the response message for GetHealth RPC.
@@ -850,7 +1186,7 @@ type HealthResponse struct {
 
 func (x *HealthResponse) Reset() {
 	*x = HealthResponse{}
-	mi := &file_order_v1_order_proto_msgTypes[13]
+	mi := &file_order_v1_order_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -862,7 +1198,7 @@ func (x *HealthResponse) String() string {
 func (*HealthResponse) ProtoMessage() {}
 
 func (x *HealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_order_v1_order_proto_msgTypes[13]
+	mi := &file_order_v1_order_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -875,7 +1211,7 @@ func (x *HealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return file_order_v1_order_proto_rawDescGZIP(), []int{13}
+	return file_order_v1_order_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *HealthResponse) GetStatus() string {
@@ -889,7 +1225,7 @@ var File_order_v1_order_proto protoreflect.FileDescriptor
 
 const file_order_v1_order_proto_rawDesc = "" +
 	"\n" +
-	"\x14order/v1/order.proto\x12\border.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15common/v1/types.proto\"\xc2\x03\n" +
+	"\x14order/v1/order.proto\x12\border.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15common/v1/types.proto\"\xe3\x03\n" +
 	"\x05Order\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12-\n" +
@@ -903,7 +1239,9 @@ const file_order_v1_order_proto_rawDesc = "" +
 	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"Q\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1f\n" +
+	"\vdelivery_id\x18\v \x01(\tR\n" +
+	"deliveryId\"Q\n" +
 	"\tOrderItem\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\x05R\bquantity\x12\x14\n" +
@@ -941,7 +1279,29 @@ const file_order_v1_order_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"<\n" +
 	"\x13CancelOrderResponse\x12%\n" +
-	"\x05order\x18\x01 \x01(\v2\x0f.order.v1.OrderR\x05order\"\x0f\n" +
+	"\x05order\x18\x01 \x01(\v2\x0f.order.v1.OrderR\x05order\"4\n" +
+	"\x15GetOrdersByIDsRequest\x12\x1b\n" +
+	"\torder_ids\x18\x01 \x03(\tR\borderIds\"\xc5\x01\n" +
+	"\x10OrderPreviewSlim\x12\x19\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x1f\n" +
+	"\vtotal_price\x18\x02 \x01(\x01R\n" +
+	"totalPrice\x12\x1f\n" +
+	"\vitems_count\x18\x03 \x01(\x05R\n" +
+	"itemsCount\x12)\n" +
+	"\x10delivery_address\x18\x04 \x01(\tR\x0fdeliveryAddress\x12)\n" +
+	"\x05items\x18\x05 \x03(\v2\x13.order.v1.OrderItemR\x05items\"L\n" +
+	"\x16GetOrdersByIDsResponse\x122\n" +
+	"\x06orders\x18\x01 \x03(\v2\x1a.order.v1.OrderPreviewSlimR\x06orders\"1\n" +
+	"\x14GetUsersByIDsRequest\x12\x19\n" +
+	"\buser_ids\x18\x01 \x03(\tR\auserIds\"j\n" +
+	"\bUserSlim\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x12\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\"A\n" +
+	"\x15GetUsersByIDsResponse\x12(\n" +
+	"\x05users\x18\x01 \x03(\v2\x12.order.v1.UserSlimR\x05users\"\x0f\n" +
 	"\rHealthRequest\"(\n" +
 	"\x0eHealthResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status*\xa1\x02\n" +
@@ -955,7 +1315,7 @@ const file_order_v1_order_proto_rawDesc = "" +
 	"\x16ORDER_STATUS_DELIVERED\x10\x06\x12\x1a\n" +
 	"\x16ORDER_STATUS_CANCELLED\x10\a\x12\x17\n" +
 	"\x13ORDER_STATUS_FAILED\x10\b\x12\x19\n" +
-	"\x15ORDER_STATUS_RETURNED\x10\t2\xeb\x04\n" +
+	"\x15ORDER_STATUS_RETURNED\x10\t2\x92\x06\n" +
 	"\fOrderService\x12a\n" +
 	"\vCreateOrder\x12\x1c.order.v1.CreateOrderRequest\x1a\x1d.order.v1.CreateOrderResponse\"\x15\x82\xd3\xe4\x93\x02\x0f:\x01*\"\n" +
 	"/v1/orders\x12Z\n" +
@@ -965,7 +1325,9 @@ const file_order_v1_order_proto_rawDesc = "" +
 	"/v1/orders\x12\x7f\n" +
 	"\x11UpdateOrderStatus\x12\".order.v1.UpdateOrderStatusRequest\x1a#.order.v1.UpdateOrderStatusResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*2\x16/v1/orders/{id}/status\x12m\n" +
 	"\vCancelOrder\x12\x1c.order.v1.CancelOrderRequest\x1a\x1d.order.v1.CancelOrderResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/orders/{id}/cancel\x12O\n" +
-	"\tGetHealth\x12\x17.order.v1.HealthRequest\x1a\x18.order.v1.HealthResponse\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/healthBAZ?github.com/mozgovojnikita/delivery-tracker/gen/order/v1;orderv1b\x06proto3"
+	"\tGetHealth\x12\x17.order.v1.HealthRequest\x1a\x18.order.v1.HealthResponse\"\x0f\x82\xd3\xe4\x93\x02\t\x12\a/health\x12S\n" +
+	"\x0eGetOrdersByIDs\x12\x1f.order.v1.GetOrdersByIDsRequest\x1a .order.v1.GetOrdersByIDsResponse\x12P\n" +
+	"\rGetUsersByIDs\x12\x1e.order.v1.GetUsersByIDsRequest\x1a\x1f.order.v1.GetUsersByIDsResponseBAZ?github.com/mozgovojnikita/delivery-tracker/gen/order/v1;orderv1b\x06proto3"
 
 var (
 	file_order_v1_order_proto_rawDescOnce sync.Once
@@ -980,7 +1342,7 @@ func file_order_v1_order_proto_rawDescGZIP() []byte {
 }
 
 var file_order_v1_order_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_order_v1_order_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_order_v1_order_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_order_v1_order_proto_goTypes = []any{
 	(OrderStatus)(0),                  // 0: order.v1.OrderStatus
 	(*Order)(nil),                     // 1: order.v1.Order
@@ -995,47 +1357,60 @@ var file_order_v1_order_proto_goTypes = []any{
 	(*UpdateOrderStatusResponse)(nil), // 10: order.v1.UpdateOrderStatusResponse
 	(*CancelOrderRequest)(nil),        // 11: order.v1.CancelOrderRequest
 	(*CancelOrderResponse)(nil),       // 12: order.v1.CancelOrderResponse
-	(*HealthRequest)(nil),             // 13: order.v1.HealthRequest
-	(*HealthResponse)(nil),            // 14: order.v1.HealthResponse
-	(*v1.Coordinates)(nil),            // 15: common.v1.Coordinates
-	(*timestamppb.Timestamp)(nil),     // 16: google.protobuf.Timestamp
-	(*v1.Pagination)(nil),             // 17: common.v1.Pagination
-	(*v1.PaginationResponse)(nil),     // 18: common.v1.PaginationResponse
+	(*GetOrdersByIDsRequest)(nil),     // 13: order.v1.GetOrdersByIDsRequest
+	(*OrderPreviewSlim)(nil),          // 14: order.v1.OrderPreviewSlim
+	(*GetOrdersByIDsResponse)(nil),    // 15: order.v1.GetOrdersByIDsResponse
+	(*GetUsersByIDsRequest)(nil),      // 16: order.v1.GetUsersByIDsRequest
+	(*UserSlim)(nil),                  // 17: order.v1.UserSlim
+	(*GetUsersByIDsResponse)(nil),     // 18: order.v1.GetUsersByIDsResponse
+	(*HealthRequest)(nil),             // 19: order.v1.HealthRequest
+	(*HealthResponse)(nil),            // 20: order.v1.HealthResponse
+	(*v1.Coordinates)(nil),            // 21: common.v1.Coordinates
+	(*timestamppb.Timestamp)(nil),     // 22: google.protobuf.Timestamp
+	(*v1.Pagination)(nil),             // 23: common.v1.Pagination
+	(*v1.PaginationResponse)(nil),     // 24: common.v1.PaginationResponse
 }
 var file_order_v1_order_proto_depIdxs = []int32{
 	0,  // 0: order.v1.Order.status:type_name -> order.v1.OrderStatus
-	15, // 1: order.v1.Order.delivery_coordinates:type_name -> common.v1.Coordinates
+	21, // 1: order.v1.Order.delivery_coordinates:type_name -> common.v1.Coordinates
 	2,  // 2: order.v1.Order.items:type_name -> order.v1.OrderItem
-	16, // 3: order.v1.Order.created_at:type_name -> google.protobuf.Timestamp
-	16, // 4: order.v1.Order.updated_at:type_name -> google.protobuf.Timestamp
-	15, // 5: order.v1.CreateOrderRequest.delivery_coordinates:type_name -> common.v1.Coordinates
+	22, // 3: order.v1.Order.created_at:type_name -> google.protobuf.Timestamp
+	22, // 4: order.v1.Order.updated_at:type_name -> google.protobuf.Timestamp
+	21, // 5: order.v1.CreateOrderRequest.delivery_coordinates:type_name -> common.v1.Coordinates
 	2,  // 6: order.v1.CreateOrderRequest.items:type_name -> order.v1.OrderItem
 	1,  // 7: order.v1.CreateOrderResponse.order:type_name -> order.v1.Order
 	1,  // 8: order.v1.GetOrderResponse.order:type_name -> order.v1.Order
 	0,  // 9: order.v1.ListOrdersRequest.status:type_name -> order.v1.OrderStatus
-	17, // 10: order.v1.ListOrdersRequest.pagination:type_name -> common.v1.Pagination
+	23, // 10: order.v1.ListOrdersRequest.pagination:type_name -> common.v1.Pagination
 	1,  // 11: order.v1.ListOrdersResponse.orders:type_name -> order.v1.Order
-	18, // 12: order.v1.ListOrdersResponse.pagination:type_name -> common.v1.PaginationResponse
+	24, // 12: order.v1.ListOrdersResponse.pagination:type_name -> common.v1.PaginationResponse
 	0,  // 13: order.v1.UpdateOrderStatusRequest.status:type_name -> order.v1.OrderStatus
 	1,  // 14: order.v1.UpdateOrderStatusResponse.order:type_name -> order.v1.Order
 	1,  // 15: order.v1.CancelOrderResponse.order:type_name -> order.v1.Order
-	3,  // 16: order.v1.OrderService.CreateOrder:input_type -> order.v1.CreateOrderRequest
-	5,  // 17: order.v1.OrderService.GetOrder:input_type -> order.v1.GetOrderRequest
-	7,  // 18: order.v1.OrderService.ListOrders:input_type -> order.v1.ListOrdersRequest
-	9,  // 19: order.v1.OrderService.UpdateOrderStatus:input_type -> order.v1.UpdateOrderStatusRequest
-	11, // 20: order.v1.OrderService.CancelOrder:input_type -> order.v1.CancelOrderRequest
-	13, // 21: order.v1.OrderService.GetHealth:input_type -> order.v1.HealthRequest
-	4,  // 22: order.v1.OrderService.CreateOrder:output_type -> order.v1.CreateOrderResponse
-	6,  // 23: order.v1.OrderService.GetOrder:output_type -> order.v1.GetOrderResponse
-	8,  // 24: order.v1.OrderService.ListOrders:output_type -> order.v1.ListOrdersResponse
-	10, // 25: order.v1.OrderService.UpdateOrderStatus:output_type -> order.v1.UpdateOrderStatusResponse
-	12, // 26: order.v1.OrderService.CancelOrder:output_type -> order.v1.CancelOrderResponse
-	14, // 27: order.v1.OrderService.GetHealth:output_type -> order.v1.HealthResponse
-	22, // [22:28] is the sub-list for method output_type
-	16, // [16:22] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	2,  // 16: order.v1.OrderPreviewSlim.items:type_name -> order.v1.OrderItem
+	14, // 17: order.v1.GetOrdersByIDsResponse.orders:type_name -> order.v1.OrderPreviewSlim
+	17, // 18: order.v1.GetUsersByIDsResponse.users:type_name -> order.v1.UserSlim
+	3,  // 19: order.v1.OrderService.CreateOrder:input_type -> order.v1.CreateOrderRequest
+	5,  // 20: order.v1.OrderService.GetOrder:input_type -> order.v1.GetOrderRequest
+	7,  // 21: order.v1.OrderService.ListOrders:input_type -> order.v1.ListOrdersRequest
+	9,  // 22: order.v1.OrderService.UpdateOrderStatus:input_type -> order.v1.UpdateOrderStatusRequest
+	11, // 23: order.v1.OrderService.CancelOrder:input_type -> order.v1.CancelOrderRequest
+	19, // 24: order.v1.OrderService.GetHealth:input_type -> order.v1.HealthRequest
+	13, // 25: order.v1.OrderService.GetOrdersByIDs:input_type -> order.v1.GetOrdersByIDsRequest
+	16, // 26: order.v1.OrderService.GetUsersByIDs:input_type -> order.v1.GetUsersByIDsRequest
+	4,  // 27: order.v1.OrderService.CreateOrder:output_type -> order.v1.CreateOrderResponse
+	6,  // 28: order.v1.OrderService.GetOrder:output_type -> order.v1.GetOrderResponse
+	8,  // 29: order.v1.OrderService.ListOrders:output_type -> order.v1.ListOrdersResponse
+	10, // 30: order.v1.OrderService.UpdateOrderStatus:output_type -> order.v1.UpdateOrderStatusResponse
+	12, // 31: order.v1.OrderService.CancelOrder:output_type -> order.v1.CancelOrderResponse
+	20, // 32: order.v1.OrderService.GetHealth:output_type -> order.v1.HealthResponse
+	15, // 33: order.v1.OrderService.GetOrdersByIDs:output_type -> order.v1.GetOrdersByIDsResponse
+	18, // 34: order.v1.OrderService.GetUsersByIDs:output_type -> order.v1.GetUsersByIDsResponse
+	27, // [27:35] is the sub-list for method output_type
+	19, // [19:27] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_order_v1_order_proto_init() }
@@ -1049,7 +1424,7 @@ func file_order_v1_order_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_order_v1_order_proto_rawDesc), len(file_order_v1_order_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   14,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

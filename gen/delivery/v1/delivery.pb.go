@@ -1101,6 +1101,720 @@ func (x *GetCourierRatingResponse) GetRatings() []*CourierRatingEntry {
 	return nil
 }
 
+// Courier represents a courier's current status snapshot.
+type Courier struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Courier) Reset() {
+	*x = Courier{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Courier) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Courier) ProtoMessage() {}
+
+func (x *Courier) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Courier.ProtoReflect.Descriptor instead.
+func (*Courier) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *Courier) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Courier) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *Courier) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+// UpdateCourierStatusRequest is the request for BKND-01: courier updates own status.
+// courier_id is extracted from x-user-id metadata by the handler.
+type UpdateCourierStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCourierStatusRequest) Reset() {
+	*x = UpdateCourierStatusRequest{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCourierStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCourierStatusRequest) ProtoMessage() {}
+
+func (x *UpdateCourierStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCourierStatusRequest.ProtoReflect.Descriptor instead.
+func (*UpdateCourierStatusRequest) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UpdateCourierStatusRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+// UpdateCourierStatusResponse returns the updated courier.
+type UpdateCourierStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Courier       *Courier               `protobuf:"bytes,1,opt,name=courier,proto3" json:"courier,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCourierStatusResponse) Reset() {
+	*x = UpdateCourierStatusResponse{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCourierStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCourierStatusResponse) ProtoMessage() {}
+
+func (x *UpdateCourierStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCourierStatusResponse.ProtoReflect.Descriptor instead.
+func (*UpdateCourierStatusResponse) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UpdateCourierStatusResponse) GetCourier() *Courier {
+	if x != nil {
+		return x.Courier
+	}
+	return nil
+}
+
+// OrderItemPreview is a lightweight item summary in AvailableOrderPreview (CRDR-07).
+type OrderItemPreview struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Quantity      int32                  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Price         float64                `protobuf:"fixed64,3,opt,name=price,proto3" json:"price,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OrderItemPreview) Reset() {
+	*x = OrderItemPreview{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrderItemPreview) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrderItemPreview) ProtoMessage() {}
+
+func (x *OrderItemPreview) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrderItemPreview.ProtoReflect.Descriptor instead.
+func (*OrderItemPreview) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *OrderItemPreview) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *OrderItemPreview) GetQuantity() int32 {
+	if x != nil {
+		return x.Quantity
+	}
+	return 0
+}
+
+func (x *OrderItemPreview) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+// AvailableOrderPreview is a summary of an order available for couriers to accept (D-06).
+type AvailableOrderPreview struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	OrderId         string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	DeliveryId      string                 `protobuf:"bytes,2,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty"`
+	DeliveryAddress string                 `protobuf:"bytes,3,opt,name=delivery_address,json=deliveryAddress,proto3" json:"delivery_address,omitempty"`
+	TotalPrice      float64                `protobuf:"fixed64,4,opt,name=total_price,json=totalPrice,proto3" json:"total_price,omitempty"`
+	ItemsCount      int32                  `protobuf:"varint,5,opt,name=items_count,json=itemsCount,proto3" json:"items_count,omitempty"`
+	ZoneName        string                 `protobuf:"bytes,6,opt,name=zone_name,json=zoneName,proto3" json:"zone_name,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Items           []*OrderItemPreview    `protobuf:"bytes,8,rep,name=items,proto3" json:"items,omitempty"` // CRDR-07: order composition before accept (Phase 13)
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *AvailableOrderPreview) Reset() {
+	*x = AvailableOrderPreview{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvailableOrderPreview) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableOrderPreview) ProtoMessage() {}
+
+func (x *AvailableOrderPreview) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableOrderPreview.ProtoReflect.Descriptor instead.
+func (*AvailableOrderPreview) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *AvailableOrderPreview) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+func (x *AvailableOrderPreview) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
+}
+
+func (x *AvailableOrderPreview) GetDeliveryAddress() string {
+	if x != nil {
+		return x.DeliveryAddress
+	}
+	return ""
+}
+
+func (x *AvailableOrderPreview) GetTotalPrice() float64 {
+	if x != nil {
+		return x.TotalPrice
+	}
+	return 0
+}
+
+func (x *AvailableOrderPreview) GetItemsCount() int32 {
+	if x != nil {
+		return x.ItemsCount
+	}
+	return 0
+}
+
+func (x *AvailableOrderPreview) GetZoneName() string {
+	if x != nil {
+		return x.ZoneName
+	}
+	return ""
+}
+
+func (x *AvailableOrderPreview) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *AvailableOrderPreview) GetItems() []*OrderItemPreview {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+// ListAvailableOrdersRequest is the request for BKND-02: list orders in courier's zones (D-05).
+type ListAvailableOrdersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cursor        string                 `protobuf:"bytes,1,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAvailableOrdersRequest) Reset() {
+	*x = ListAvailableOrdersRequest{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAvailableOrdersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAvailableOrdersRequest) ProtoMessage() {}
+
+func (x *ListAvailableOrdersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAvailableOrdersRequest.ProtoReflect.Descriptor instead.
+func (*ListAvailableOrdersRequest) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListAvailableOrdersRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+func (x *ListAvailableOrdersRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+// ListAvailableOrdersResponse returns paginated available orders.
+type ListAvailableOrdersResponse struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Orders        []*AvailableOrderPreview `protobuf:"bytes,1,rep,name=orders,proto3" json:"orders,omitempty"`
+	NextCursor    string                   `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAvailableOrdersResponse) Reset() {
+	*x = ListAvailableOrdersResponse{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAvailableOrdersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAvailableOrdersResponse) ProtoMessage() {}
+
+func (x *ListAvailableOrdersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAvailableOrdersResponse.ProtoReflect.Descriptor instead.
+func (*ListAvailableOrdersResponse) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ListAvailableOrdersResponse) GetOrders() []*AvailableOrderPreview {
+	if x != nil {
+		return x.Orders
+	}
+	return nil
+}
+
+func (x *ListAvailableOrdersResponse) GetNextCursor() string {
+	if x != nil {
+		return x.NextCursor
+	}
+	return ""
+}
+
+// AcceptOrderRequest is the request for BKND-03: courier accepts an unassigned delivery (D-07..D-09).
+type AcceptOrderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeliveryId    string                 `protobuf:"bytes,1,opt,name=delivery_id,json=deliveryId,proto3" json:"delivery_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcceptOrderRequest) Reset() {
+	*x = AcceptOrderRequest{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptOrderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptOrderRequest) ProtoMessage() {}
+
+func (x *AcceptOrderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptOrderRequest.ProtoReflect.Descriptor instead.
+func (*AcceptOrderRequest) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *AcceptOrderRequest) GetDeliveryId() string {
+	if x != nil {
+		return x.DeliveryId
+	}
+	return ""
+}
+
+// AcceptOrderResponse returns the delivery after acceptance.
+type AcceptOrderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Delivery      *Delivery              `protobuf:"bytes,1,opt,name=delivery,proto3" json:"delivery,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcceptOrderResponse) Reset() {
+	*x = AcceptOrderResponse{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptOrderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptOrderResponse) ProtoMessage() {}
+
+func (x *AcceptOrderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptOrderResponse.ProtoReflect.Descriptor instead.
+func (*AcceptOrderResponse) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *AcceptOrderResponse) GetDelivery() *Delivery {
+	if x != nil {
+		return x.Delivery
+	}
+	return nil
+}
+
+// GetDeliveryByOrderIDRequest is the request for BKND-04: cross-service lookup by order ID (D-10).
+type GetDeliveryByOrderIDRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDeliveryByOrderIDRequest) Reset() {
+	*x = GetDeliveryByOrderIDRequest{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDeliveryByOrderIDRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDeliveryByOrderIDRequest) ProtoMessage() {}
+
+func (x *GetDeliveryByOrderIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDeliveryByOrderIDRequest.ProtoReflect.Descriptor instead.
+func (*GetDeliveryByOrderIDRequest) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetDeliveryByOrderIDRequest) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+// GetDeliveryByOrderIDResponse returns the delivery associated with the given order.
+type GetDeliveryByOrderIDResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Delivery      *Delivery              `protobuf:"bytes,1,opt,name=delivery,proto3" json:"delivery,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDeliveryByOrderIDResponse) Reset() {
+	*x = GetDeliveryByOrderIDResponse{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDeliveryByOrderIDResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDeliveryByOrderIDResponse) ProtoMessage() {}
+
+func (x *GetDeliveryByOrderIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDeliveryByOrderIDResponse.ProtoReflect.Descriptor instead.
+func (*GetDeliveryByOrderIDResponse) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *GetDeliveryByOrderIDResponse) GetDelivery() *Delivery {
+	if x != nil {
+		return x.Delivery
+	}
+	return nil
+}
+
+// GetCourierProfileRequest is the request for the public courier profile endpoint (RATE-05).
+type GetCourierProfileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CourierId     string                 `protobuf:"bytes,1,opt,name=courier_id,json=courierId,proto3" json:"courier_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCourierProfileRequest) Reset() {
+	*x = GetCourierProfileRequest{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCourierProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCourierProfileRequest) ProtoMessage() {}
+
+func (x *GetCourierProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCourierProfileRequest.ProtoReflect.Descriptor instead.
+func (*GetCourierProfileRequest) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *GetCourierProfileRequest) GetCourierId() string {
+	if x != nil {
+		return x.CourierId
+	}
+	return ""
+}
+
+// GetCourierProfileResponse returns public profile info (name + rating) for a courier.
+type GetCourierProfileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FirstName     string                 `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,2,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	AverageStars  float64                `protobuf:"fixed64,3,opt,name=average_stars,json=averageStars,proto3" json:"average_stars,omitempty"`
+	TotalRatings  int32                  `protobuf:"varint,4,opt,name=total_ratings,json=totalRatings,proto3" json:"total_ratings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCourierProfileResponse) Reset() {
+	*x = GetCourierProfileResponse{}
+	mi := &file_delivery_v1_delivery_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCourierProfileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCourierProfileResponse) ProtoMessage() {}
+
+func (x *GetCourierProfileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_delivery_v1_delivery_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCourierProfileResponse.ProtoReflect.Descriptor instead.
+func (*GetCourierProfileResponse) Descriptor() ([]byte, []int) {
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GetCourierProfileResponse) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *GetCourierProfileResponse) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
+func (x *GetCourierProfileResponse) GetAverageStars() float64 {
+	if x != nil {
+		return x.AverageStars
+	}
+	return 0
+}
+
+func (x *GetCourierProfileResponse) GetTotalRatings() int32 {
+	if x != nil {
+		return x.TotalRatings
+	}
+	return 0
+}
+
 // HealthRequest is the request message for GetHealth RPC.
 type HealthRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1110,7 +1824,7 @@ type HealthRequest struct {
 
 func (x *HealthRequest) Reset() {
 	*x = HealthRequest{}
-	mi := &file_delivery_v1_delivery_proto_msgTypes[19]
+	mi := &file_delivery_v1_delivery_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1122,7 +1836,7 @@ func (x *HealthRequest) String() string {
 func (*HealthRequest) ProtoMessage() {}
 
 func (x *HealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_delivery_v1_delivery_proto_msgTypes[19]
+	mi := &file_delivery_v1_delivery_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1135,7 +1849,7 @@ func (x *HealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{19}
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{32}
 }
 
 // HealthResponse is the response message for GetHealth RPC.
@@ -1148,7 +1862,7 @@ type HealthResponse struct {
 
 func (x *HealthResponse) Reset() {
 	*x = HealthResponse{}
-	mi := &file_delivery_v1_delivery_proto_msgTypes[20]
+	mi := &file_delivery_v1_delivery_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1160,7 +1874,7 @@ func (x *HealthResponse) String() string {
 func (*HealthResponse) ProtoMessage() {}
 
 func (x *HealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_delivery_v1_delivery_proto_msgTypes[20]
+	mi := &file_delivery_v1_delivery_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1173,7 +1887,7 @@ func (x *HealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{20}
+	return file_delivery_v1_delivery_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *HealthResponse) GetStatus() string {
@@ -1260,7 +1974,58 @@ const file_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x18GetCourierRatingResponse\x12#\n" +
 	"\raverage_stars\x18\x01 \x01(\x01R\faverageStars\x12#\n" +
 	"\rtotal_ratings\x18\x02 \x01(\x05R\ftotalRatings\x129\n" +
-	"\aratings\x18\x03 \x03(\v2\x1f.delivery.v1.CourierRatingEntryR\aratings\"\x0f\n" +
+	"\aratings\x18\x03 \x03(\v2\x1f.delivery.v1.CourierRatingEntryR\aratings\"l\n" +
+	"\aCourier\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x129\n" +
+	"\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"4\n" +
+	"\x1aUpdateCourierStatusRequest\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\"M\n" +
+	"\x1bUpdateCourierStatusResponse\x12.\n" +
+	"\acourier\x18\x01 \x01(\v2\x14.delivery.v1.CourierR\acourier\"X\n" +
+	"\x10OrderItemPreview\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\bquantity\x18\x02 \x01(\x05R\bquantity\x12\x14\n" +
+	"\x05price\x18\x03 \x01(\x01R\x05price\"\xcd\x02\n" +
+	"\x15AvailableOrderPreview\x12\x19\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x1f\n" +
+	"\vdelivery_id\x18\x02 \x01(\tR\n" +
+	"deliveryId\x12)\n" +
+	"\x10delivery_address\x18\x03 \x01(\tR\x0fdeliveryAddress\x12\x1f\n" +
+	"\vtotal_price\x18\x04 \x01(\x01R\n" +
+	"totalPrice\x12\x1f\n" +
+	"\vitems_count\x18\x05 \x01(\x05R\n" +
+	"itemsCount\x12\x1b\n" +
+	"\tzone_name\x18\x06 \x01(\tR\bzoneName\x129\n" +
+	"\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x123\n" +
+	"\x05items\x18\b \x03(\v2\x1d.delivery.v1.OrderItemPreviewR\x05items\"J\n" +
+	"\x1aListAvailableOrdersRequest\x12\x16\n" +
+	"\x06cursor\x18\x01 \x01(\tR\x06cursor\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"z\n" +
+	"\x1bListAvailableOrdersResponse\x12:\n" +
+	"\x06orders\x18\x01 \x03(\v2\".delivery.v1.AvailableOrderPreviewR\x06orders\x12\x1f\n" +
+	"\vnext_cursor\x18\x02 \x01(\tR\n" +
+	"nextCursor\"5\n" +
+	"\x12AcceptOrderRequest\x12\x1f\n" +
+	"\vdelivery_id\x18\x01 \x01(\tR\n" +
+	"deliveryId\"H\n" +
+	"\x13AcceptOrderResponse\x121\n" +
+	"\bdelivery\x18\x01 \x01(\v2\x15.delivery.v1.DeliveryR\bdelivery\"8\n" +
+	"\x1bGetDeliveryByOrderIDRequest\x12\x19\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\"Q\n" +
+	"\x1cGetDeliveryByOrderIDResponse\x121\n" +
+	"\bdelivery\x18\x01 \x01(\v2\x15.delivery.v1.DeliveryR\bdelivery\"9\n" +
+	"\x18GetCourierProfileRequest\x12\x1d\n" +
+	"\n" +
+	"courier_id\x18\x01 \x01(\tR\tcourierId\"\xa1\x01\n" +
+	"\x19GetCourierProfileResponse\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x01 \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\x02 \x01(\tR\blastName\x12#\n" +
+	"\raverage_stars\x18\x03 \x01(\x01R\faverageStars\x12#\n" +
+	"\rtotal_ratings\x18\x04 \x01(\x05R\ftotalRatings\"\x0f\n" +
 	"\rHealthRequest\"(\n" +
 	"\x0eHealthResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status*\xe6\x01\n" +
@@ -1271,7 +2036,7 @@ const file_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x19DELIVERY_STATUS_PICKED_UP\x10\x03\x12\x1e\n" +
 	"\x1aDELIVERY_STATUS_IN_TRANSIT\x10\x04\x12\x1d\n" +
 	"\x19DELIVERY_STATUS_DELIVERED\x10\x05\x12\x1a\n" +
-	"\x16DELIVERY_STATUS_FAILED\x10\x062\xac\b\n" +
+	"\x16DELIVERY_STATUS_FAILED\x10\x062\x88\x0e\n" +
 	"\x0fDeliveryService\x12x\n" +
 	"\rAssignCourier\x12!.delivery.v1.AssignCourierRequest\x1a\".delivery.v1.AssignCourierResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/deliveries/assign\x12m\n" +
 	"\vGetDelivery\x12\x1f.delivery.v1.GetDeliveryRequest\x1a .delivery.v1.GetDeliveryResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/deliveries/{id}\x12c\n" +
@@ -1281,8 +2046,13 @@ const file_delivery_v1_delivery_proto_rawDesc = "" +
 	"\x13AssignCourierToZone\x12'.delivery.v1.AssignCourierToZoneRequest\x1a(.delivery.v1.AssignCourierToZoneResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/zones/assign-courier\x12\x9f\x01\n" +
 	"\x16GetDeliveriesByCourier\x12*.delivery.v1.GetDeliveriesByCourierRequest\x1a+.delivery.v1.GetDeliveriesByCourierResponse\",\x82\xd3\xe4\x93\x02&\x12$/v1/couriers/{courier_id}/deliveries\x12h\n" +
 	"\vRateCourier\x12\x1f.delivery.v1.RateCourierRequest\x1a .delivery.v1.RateCourierResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/ratings\x12\x89\x01\n" +
-	"\x10GetCourierRating\x12$.delivery.v1.GetCourierRatingRequest\x1a%.delivery.v1.GetCourierRatingResponse\"(\x82\xd3\xe4\x93\x02\"\x12 /v1/couriers/{courier_id}/rating\x12D\n" +
-	"\tGetHealth\x12\x1a.delivery.v1.HealthRequest\x1a\x1b.delivery.v1.HealthResponseBGZEgithub.com/mozgovojnikita/delivery-tracker/gen/delivery/v1;deliveryv1b\x06proto3"
+	"\x10GetCourierRating\x12$.delivery.v1.GetCourierRatingRequest\x1a%.delivery.v1.GetCourierRatingResponse\"(\x82\xd3\xe4\x93\x02\"\x12 /v1/couriers/{courier_id}/rating\x12\x8d\x01\n" +
+	"\x11GetCourierProfile\x12%.delivery.v1.GetCourierProfileRequest\x1a&.delivery.v1.GetCourierProfileResponse\")\x82\xd3\xe4\x93\x02#\x12!/v1/couriers/{courier_id}/profile\x12D\n" +
+	"\tGetHealth\x12\x1a.delivery.v1.HealthRequest\x1a\x1b.delivery.v1.HealthResponse\x12\x8b\x01\n" +
+	"\x13UpdateCourierStatus\x12'.delivery.v1.UpdateCourierStatusRequest\x1a(.delivery.v1.UpdateCourierStatusResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*2\x16/v1/couriers/me/status\x12\x92\x01\n" +
+	"\x13ListAvailableOrders\x12'.delivery.v1.ListAvailableOrdersRequest\x1a(.delivery.v1.ListAvailableOrdersResponse\"(\x82\xd3\xe4\x93\x02\"\x12 /v1/couriers/me/available-orders\x12\x8c\x01\n" +
+	"\vAcceptOrder\x12\x1f.delivery.v1.AcceptOrderRequest\x1a .delivery.v1.AcceptOrderResponse\":\x82\xd3\xe4\x93\x024:\x01*\"//v1/couriers/me/deliveries/{delivery_id}/accept\x12\x97\x01\n" +
+	"\x14GetDeliveryByOrderID\x12(.delivery.v1.GetDeliveryByOrderIDRequest\x1a).delivery.v1.GetDeliveryByOrderIDResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/v1/deliveries/by-order/{order_id}BGZEgithub.com/mozgovojnikita/delivery-tracker/gen/delivery/v1;deliveryv1b\x06proto3"
 
 var (
 	file_delivery_v1_delivery_proto_rawDescOnce sync.Once
@@ -1297,7 +2067,7 @@ func file_delivery_v1_delivery_proto_rawDescGZIP() []byte {
 }
 
 var file_delivery_v1_delivery_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_delivery_v1_delivery_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_delivery_v1_delivery_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_delivery_v1_delivery_proto_goTypes = []any{
 	(DeliveryStatus)(0),                    // 0: delivery.v1.DeliveryStatus
 	(*Delivery)(nil),                       // 1: delivery.v1.Delivery
@@ -1319,48 +2089,78 @@ var file_delivery_v1_delivery_proto_goTypes = []any{
 	(*GetCourierRatingRequest)(nil),        // 17: delivery.v1.GetCourierRatingRequest
 	(*CourierRatingEntry)(nil),             // 18: delivery.v1.CourierRatingEntry
 	(*GetCourierRatingResponse)(nil),       // 19: delivery.v1.GetCourierRatingResponse
-	(*HealthRequest)(nil),                  // 20: delivery.v1.HealthRequest
-	(*HealthResponse)(nil),                 // 21: delivery.v1.HealthResponse
-	(*timestamppb.Timestamp)(nil),          // 22: google.protobuf.Timestamp
-	(*v1.Pagination)(nil),                  // 23: common.v1.Pagination
-	(*v1.PaginationResponse)(nil),          // 24: common.v1.PaginationResponse
+	(*Courier)(nil),                        // 20: delivery.v1.Courier
+	(*UpdateCourierStatusRequest)(nil),     // 21: delivery.v1.UpdateCourierStatusRequest
+	(*UpdateCourierStatusResponse)(nil),    // 22: delivery.v1.UpdateCourierStatusResponse
+	(*OrderItemPreview)(nil),               // 23: delivery.v1.OrderItemPreview
+	(*AvailableOrderPreview)(nil),          // 24: delivery.v1.AvailableOrderPreview
+	(*ListAvailableOrdersRequest)(nil),     // 25: delivery.v1.ListAvailableOrdersRequest
+	(*ListAvailableOrdersResponse)(nil),    // 26: delivery.v1.ListAvailableOrdersResponse
+	(*AcceptOrderRequest)(nil),             // 27: delivery.v1.AcceptOrderRequest
+	(*AcceptOrderResponse)(nil),            // 28: delivery.v1.AcceptOrderResponse
+	(*GetDeliveryByOrderIDRequest)(nil),    // 29: delivery.v1.GetDeliveryByOrderIDRequest
+	(*GetDeliveryByOrderIDResponse)(nil),   // 30: delivery.v1.GetDeliveryByOrderIDResponse
+	(*GetCourierProfileRequest)(nil),       // 31: delivery.v1.GetCourierProfileRequest
+	(*GetCourierProfileResponse)(nil),      // 32: delivery.v1.GetCourierProfileResponse
+	(*HealthRequest)(nil),                  // 33: delivery.v1.HealthRequest
+	(*HealthResponse)(nil),                 // 34: delivery.v1.HealthResponse
+	(*timestamppb.Timestamp)(nil),          // 35: google.protobuf.Timestamp
+	(*v1.Pagination)(nil),                  // 36: common.v1.Pagination
+	(*v1.PaginationResponse)(nil),          // 37: common.v1.PaginationResponse
 }
 var file_delivery_v1_delivery_proto_depIdxs = []int32{
 	0,  // 0: delivery.v1.Delivery.status:type_name -> delivery.v1.DeliveryStatus
-	22, // 1: delivery.v1.Delivery.estimated_delivery:type_name -> google.protobuf.Timestamp
-	22, // 2: delivery.v1.Delivery.created_at:type_name -> google.protobuf.Timestamp
+	35, // 1: delivery.v1.Delivery.estimated_delivery:type_name -> google.protobuf.Timestamp
+	35, // 2: delivery.v1.Delivery.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 3: delivery.v1.AssignCourierResponse.delivery:type_name -> delivery.v1.Delivery
 	1,  // 4: delivery.v1.GetDeliveryResponse.delivery:type_name -> delivery.v1.Delivery
 	2,  // 5: delivery.v1.CreateZoneResponse.zone:type_name -> delivery.v1.DeliveryZone
-	23, // 6: delivery.v1.ListZonesRequest.pagination:type_name -> common.v1.Pagination
+	36, // 6: delivery.v1.ListZonesRequest.pagination:type_name -> common.v1.Pagination
 	2,  // 7: delivery.v1.ListZonesResponse.zones:type_name -> delivery.v1.DeliveryZone
-	24, // 8: delivery.v1.ListZonesResponse.pagination:type_name -> common.v1.PaginationResponse
+	37, // 8: delivery.v1.ListZonesResponse.pagination:type_name -> common.v1.PaginationResponse
 	1,  // 9: delivery.v1.GetDeliveriesByCourierResponse.deliveries:type_name -> delivery.v1.Delivery
-	22, // 10: delivery.v1.CourierRatingEntry.created_at:type_name -> google.protobuf.Timestamp
+	35, // 10: delivery.v1.CourierRatingEntry.created_at:type_name -> google.protobuf.Timestamp
 	18, // 11: delivery.v1.GetCourierRatingResponse.ratings:type_name -> delivery.v1.CourierRatingEntry
-	3,  // 12: delivery.v1.DeliveryService.AssignCourier:input_type -> delivery.v1.AssignCourierRequest
-	5,  // 13: delivery.v1.DeliveryService.GetDelivery:input_type -> delivery.v1.GetDeliveryRequest
-	7,  // 14: delivery.v1.DeliveryService.CreateZone:input_type -> delivery.v1.CreateZoneRequest
-	9,  // 15: delivery.v1.DeliveryService.ListZones:input_type -> delivery.v1.ListZonesRequest
-	11, // 16: delivery.v1.DeliveryService.AssignCourierToZone:input_type -> delivery.v1.AssignCourierToZoneRequest
-	13, // 17: delivery.v1.DeliveryService.GetDeliveriesByCourier:input_type -> delivery.v1.GetDeliveriesByCourierRequest
-	15, // 18: delivery.v1.DeliveryService.RateCourier:input_type -> delivery.v1.RateCourierRequest
-	17, // 19: delivery.v1.DeliveryService.GetCourierRating:input_type -> delivery.v1.GetCourierRatingRequest
-	20, // 20: delivery.v1.DeliveryService.GetHealth:input_type -> delivery.v1.HealthRequest
-	4,  // 21: delivery.v1.DeliveryService.AssignCourier:output_type -> delivery.v1.AssignCourierResponse
-	6,  // 22: delivery.v1.DeliveryService.GetDelivery:output_type -> delivery.v1.GetDeliveryResponse
-	8,  // 23: delivery.v1.DeliveryService.CreateZone:output_type -> delivery.v1.CreateZoneResponse
-	10, // 24: delivery.v1.DeliveryService.ListZones:output_type -> delivery.v1.ListZonesResponse
-	12, // 25: delivery.v1.DeliveryService.AssignCourierToZone:output_type -> delivery.v1.AssignCourierToZoneResponse
-	14, // 26: delivery.v1.DeliveryService.GetDeliveriesByCourier:output_type -> delivery.v1.GetDeliveriesByCourierResponse
-	16, // 27: delivery.v1.DeliveryService.RateCourier:output_type -> delivery.v1.RateCourierResponse
-	19, // 28: delivery.v1.DeliveryService.GetCourierRating:output_type -> delivery.v1.GetCourierRatingResponse
-	21, // 29: delivery.v1.DeliveryService.GetHealth:output_type -> delivery.v1.HealthResponse
-	21, // [21:30] is the sub-list for method output_type
-	12, // [12:21] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	35, // 12: delivery.v1.Courier.updated_at:type_name -> google.protobuf.Timestamp
+	20, // 13: delivery.v1.UpdateCourierStatusResponse.courier:type_name -> delivery.v1.Courier
+	35, // 14: delivery.v1.AvailableOrderPreview.created_at:type_name -> google.protobuf.Timestamp
+	23, // 15: delivery.v1.AvailableOrderPreview.items:type_name -> delivery.v1.OrderItemPreview
+	24, // 16: delivery.v1.ListAvailableOrdersResponse.orders:type_name -> delivery.v1.AvailableOrderPreview
+	1,  // 17: delivery.v1.AcceptOrderResponse.delivery:type_name -> delivery.v1.Delivery
+	1,  // 18: delivery.v1.GetDeliveryByOrderIDResponse.delivery:type_name -> delivery.v1.Delivery
+	3,  // 19: delivery.v1.DeliveryService.AssignCourier:input_type -> delivery.v1.AssignCourierRequest
+	5,  // 20: delivery.v1.DeliveryService.GetDelivery:input_type -> delivery.v1.GetDeliveryRequest
+	7,  // 21: delivery.v1.DeliveryService.CreateZone:input_type -> delivery.v1.CreateZoneRequest
+	9,  // 22: delivery.v1.DeliveryService.ListZones:input_type -> delivery.v1.ListZonesRequest
+	11, // 23: delivery.v1.DeliveryService.AssignCourierToZone:input_type -> delivery.v1.AssignCourierToZoneRequest
+	13, // 24: delivery.v1.DeliveryService.GetDeliveriesByCourier:input_type -> delivery.v1.GetDeliveriesByCourierRequest
+	15, // 25: delivery.v1.DeliveryService.RateCourier:input_type -> delivery.v1.RateCourierRequest
+	17, // 26: delivery.v1.DeliveryService.GetCourierRating:input_type -> delivery.v1.GetCourierRatingRequest
+	31, // 27: delivery.v1.DeliveryService.GetCourierProfile:input_type -> delivery.v1.GetCourierProfileRequest
+	33, // 28: delivery.v1.DeliveryService.GetHealth:input_type -> delivery.v1.HealthRequest
+	21, // 29: delivery.v1.DeliveryService.UpdateCourierStatus:input_type -> delivery.v1.UpdateCourierStatusRequest
+	25, // 30: delivery.v1.DeliveryService.ListAvailableOrders:input_type -> delivery.v1.ListAvailableOrdersRequest
+	27, // 31: delivery.v1.DeliveryService.AcceptOrder:input_type -> delivery.v1.AcceptOrderRequest
+	29, // 32: delivery.v1.DeliveryService.GetDeliveryByOrderID:input_type -> delivery.v1.GetDeliveryByOrderIDRequest
+	4,  // 33: delivery.v1.DeliveryService.AssignCourier:output_type -> delivery.v1.AssignCourierResponse
+	6,  // 34: delivery.v1.DeliveryService.GetDelivery:output_type -> delivery.v1.GetDeliveryResponse
+	8,  // 35: delivery.v1.DeliveryService.CreateZone:output_type -> delivery.v1.CreateZoneResponse
+	10, // 36: delivery.v1.DeliveryService.ListZones:output_type -> delivery.v1.ListZonesResponse
+	12, // 37: delivery.v1.DeliveryService.AssignCourierToZone:output_type -> delivery.v1.AssignCourierToZoneResponse
+	14, // 38: delivery.v1.DeliveryService.GetDeliveriesByCourier:output_type -> delivery.v1.GetDeliveriesByCourierResponse
+	16, // 39: delivery.v1.DeliveryService.RateCourier:output_type -> delivery.v1.RateCourierResponse
+	19, // 40: delivery.v1.DeliveryService.GetCourierRating:output_type -> delivery.v1.GetCourierRatingResponse
+	32, // 41: delivery.v1.DeliveryService.GetCourierProfile:output_type -> delivery.v1.GetCourierProfileResponse
+	34, // 42: delivery.v1.DeliveryService.GetHealth:output_type -> delivery.v1.HealthResponse
+	22, // 43: delivery.v1.DeliveryService.UpdateCourierStatus:output_type -> delivery.v1.UpdateCourierStatusResponse
+	26, // 44: delivery.v1.DeliveryService.ListAvailableOrders:output_type -> delivery.v1.ListAvailableOrdersResponse
+	28, // 45: delivery.v1.DeliveryService.AcceptOrder:output_type -> delivery.v1.AcceptOrderResponse
+	30, // 46: delivery.v1.DeliveryService.GetDeliveryByOrderID:output_type -> delivery.v1.GetDeliveryByOrderIDResponse
+	33, // [33:47] is the sub-list for method output_type
+	19, // [19:33] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_delivery_v1_delivery_proto_init() }
@@ -1374,7 +2174,7 @@ func file_delivery_v1_delivery_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_delivery_v1_delivery_proto_rawDesc), len(file_delivery_v1_delivery_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   21,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

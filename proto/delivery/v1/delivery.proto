@@ -134,6 +134,88 @@ message GetCourierRatingResponse {
   repeated CourierRatingEntry ratings = 3;
 }
 
+// Courier represents a courier's current status snapshot.
+message Courier {
+  string id = 1;
+  string status = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+// UpdateCourierStatusRequest is the request for BKND-01: courier updates own status.
+// courier_id is extracted from x-user-id metadata by the handler.
+message UpdateCourierStatusRequest {
+  string status = 1;
+}
+
+// UpdateCourierStatusResponse returns the updated courier.
+message UpdateCourierStatusResponse {
+  Courier courier = 1;
+}
+
+// OrderItemPreview is a lightweight item summary in AvailableOrderPreview (CRDR-07).
+message OrderItemPreview {
+  string name = 1;
+  int32 quantity = 2;
+  double price = 3;
+}
+
+// AvailableOrderPreview is a summary of an order available for couriers to accept (D-06).
+message AvailableOrderPreview {
+  string order_id = 1;
+  string delivery_id = 2;
+  string delivery_address = 3;
+  double total_price = 4;
+  int32 items_count = 5;
+  string zone_name = 6;
+  google.protobuf.Timestamp created_at = 7;
+  repeated OrderItemPreview items = 8;  // CRDR-07: order composition before accept (Phase 13)
+}
+
+// ListAvailableOrdersRequest is the request for BKND-02: list orders in courier's zones (D-05).
+message ListAvailableOrdersRequest {
+  string cursor = 1;
+  int32 limit = 2;
+}
+
+// ListAvailableOrdersResponse returns paginated available orders.
+message ListAvailableOrdersResponse {
+  repeated AvailableOrderPreview orders = 1;
+  string next_cursor = 2;
+}
+
+// AcceptOrderRequest is the request for BKND-03: courier accepts an unassigned delivery (D-07..D-09).
+message AcceptOrderRequest {
+  string delivery_id = 1;
+}
+
+// AcceptOrderResponse returns the delivery after acceptance.
+message AcceptOrderResponse {
+  Delivery delivery = 1;
+}
+
+// GetDeliveryByOrderIDRequest is the request for BKND-04: cross-service lookup by order ID (D-10).
+message GetDeliveryByOrderIDRequest {
+  string order_id = 1;
+}
+
+// GetDeliveryByOrderIDResponse returns the delivery associated with the given order.
+message GetDeliveryByOrderIDResponse {
+  Delivery delivery = 1;
+}
+
+// GetCourierProfileRequest is the request for the public courier profile endpoint (RATE-05).
+message GetCourierProfileRequest {
+  string courier_id = 1;
+}
+
+// GetCourierProfileResponse returns public profile info (name + rating) for a courier.
+message GetCourierProfileResponse {
+  string first_name = 1;
+  string last_name = 2;
+  double average_stars = 3;
+  int32 total_ratings = 4;
+}
+
 // HealthRequest is the request message for GetHealth RPC.
 message HealthRequest {}
 
@@ -205,6 +287,44 @@ service DeliveryService {
     };
   }
 
+  // GetCourierProfile returns public profile (name + rating) for a courier (RATE-05).
+  // No auth required — same public access as GetCourierRating (no RBAC rule added).
+  rpc GetCourierProfile(GetCourierProfileRequest) returns (GetCourierProfileResponse) {
+    option (google.api.http) = {
+      get: "/v1/couriers/{courier_id}/profile"
+    };
+  }
+
   // GetHealth checks the health of the delivery service.
   rpc GetHealth(HealthRequest) returns (HealthResponse);
+
+  // UpdateCourierStatus: BKND-01 — courier updates own status (D-01).
+  rpc UpdateCourierStatus(UpdateCourierStatusRequest) returns (UpdateCourierStatusResponse) {
+    option (google.api.http) = {
+      patch: "/v1/couriers/me/status"
+      body: "*"
+    };
+  }
+
+  // ListAvailableOrders: BKND-02 — list orders available for this courier's zones (D-04, D-05).
+  rpc ListAvailableOrders(ListAvailableOrdersRequest) returns (ListAvailableOrdersResponse) {
+    option (google.api.http) = {
+      get: "/v1/couriers/me/available-orders"
+    };
+  }
+
+  // AcceptOrder: BKND-03 — courier accepts an unassigned delivery (D-07..D-09).
+  rpc AcceptOrder(AcceptOrderRequest) returns (AcceptOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/couriers/me/deliveries/{delivery_id}/accept"
+      body: "*"
+    };
+  }
+
+  // GetDeliveryByOrderID: BKND-04 — cross-service lookup used by order-service (D-10).
+  rpc GetDeliveryByOrderID(GetDeliveryByOrderIDRequest) returns (GetDeliveryByOrderIDResponse) {
+    option (google.api.http) = {
+      get: "/v1/deliveries/by-order/{order_id}"
+    };
+  }
 }

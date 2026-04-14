@@ -27,7 +27,12 @@ const (
 	DeliveryService_GetDeliveriesByCourier_FullMethodName = "/delivery.v1.DeliveryService/GetDeliveriesByCourier"
 	DeliveryService_RateCourier_FullMethodName            = "/delivery.v1.DeliveryService/RateCourier"
 	DeliveryService_GetCourierRating_FullMethodName       = "/delivery.v1.DeliveryService/GetCourierRating"
+	DeliveryService_GetCourierProfile_FullMethodName      = "/delivery.v1.DeliveryService/GetCourierProfile"
 	DeliveryService_GetHealth_FullMethodName              = "/delivery.v1.DeliveryService/GetHealth"
+	DeliveryService_UpdateCourierStatus_FullMethodName    = "/delivery.v1.DeliveryService/UpdateCourierStatus"
+	DeliveryService_ListAvailableOrders_FullMethodName    = "/delivery.v1.DeliveryService/ListAvailableOrders"
+	DeliveryService_AcceptOrder_FullMethodName            = "/delivery.v1.DeliveryService/AcceptOrder"
+	DeliveryService_GetDeliveryByOrderID_FullMethodName   = "/delivery.v1.DeliveryService/GetDeliveryByOrderID"
 )
 
 // DeliveryServiceClient is the client API for DeliveryService service.
@@ -53,8 +58,19 @@ type DeliveryServiceClient interface {
 	RateCourier(ctx context.Context, in *RateCourierRequest, opts ...grpc.CallOption) (*RateCourierResponse, error)
 	// GetCourierRating retrieves a courier's average rating and individual reviews.
 	GetCourierRating(ctx context.Context, in *GetCourierRatingRequest, opts ...grpc.CallOption) (*GetCourierRatingResponse, error)
+	// GetCourierProfile returns public profile (name + rating) for a courier (RATE-05).
+	// No auth required — same public access as GetCourierRating (no RBAC rule added).
+	GetCourierProfile(ctx context.Context, in *GetCourierProfileRequest, opts ...grpc.CallOption) (*GetCourierProfileResponse, error)
 	// GetHealth checks the health of the delivery service.
 	GetHealth(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	// UpdateCourierStatus: BKND-01 — courier updates own status (D-01).
+	UpdateCourierStatus(ctx context.Context, in *UpdateCourierStatusRequest, opts ...grpc.CallOption) (*UpdateCourierStatusResponse, error)
+	// ListAvailableOrders: BKND-02 — list orders available for this courier's zones (D-04, D-05).
+	ListAvailableOrders(ctx context.Context, in *ListAvailableOrdersRequest, opts ...grpc.CallOption) (*ListAvailableOrdersResponse, error)
+	// AcceptOrder: BKND-03 — courier accepts an unassigned delivery (D-07..D-09).
+	AcceptOrder(ctx context.Context, in *AcceptOrderRequest, opts ...grpc.CallOption) (*AcceptOrderResponse, error)
+	// GetDeliveryByOrderID: BKND-04 — cross-service lookup used by order-service (D-10).
+	GetDeliveryByOrderID(ctx context.Context, in *GetDeliveryByOrderIDRequest, opts ...grpc.CallOption) (*GetDeliveryByOrderIDResponse, error)
 }
 
 type deliveryServiceClient struct {
@@ -145,10 +161,60 @@ func (c *deliveryServiceClient) GetCourierRating(ctx context.Context, in *GetCou
 	return out, nil
 }
 
+func (c *deliveryServiceClient) GetCourierProfile(ctx context.Context, in *GetCourierProfileRequest, opts ...grpc.CallOption) (*GetCourierProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCourierProfileResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_GetCourierProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deliveryServiceClient) GetHealth(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HealthResponse)
 	err := c.cc.Invoke(ctx, DeliveryService_GetHealth_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deliveryServiceClient) UpdateCourierStatus(ctx context.Context, in *UpdateCourierStatusRequest, opts ...grpc.CallOption) (*UpdateCourierStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCourierStatusResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_UpdateCourierStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deliveryServiceClient) ListAvailableOrders(ctx context.Context, in *ListAvailableOrdersRequest, opts ...grpc.CallOption) (*ListAvailableOrdersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAvailableOrdersResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_ListAvailableOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deliveryServiceClient) AcceptOrder(ctx context.Context, in *AcceptOrderRequest, opts ...grpc.CallOption) (*AcceptOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptOrderResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_AcceptOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deliveryServiceClient) GetDeliveryByOrderID(ctx context.Context, in *GetDeliveryByOrderIDRequest, opts ...grpc.CallOption) (*GetDeliveryByOrderIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeliveryByOrderIDResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_GetDeliveryByOrderID_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +244,19 @@ type DeliveryServiceServer interface {
 	RateCourier(context.Context, *RateCourierRequest) (*RateCourierResponse, error)
 	// GetCourierRating retrieves a courier's average rating and individual reviews.
 	GetCourierRating(context.Context, *GetCourierRatingRequest) (*GetCourierRatingResponse, error)
+	// GetCourierProfile returns public profile (name + rating) for a courier (RATE-05).
+	// No auth required — same public access as GetCourierRating (no RBAC rule added).
+	GetCourierProfile(context.Context, *GetCourierProfileRequest) (*GetCourierProfileResponse, error)
 	// GetHealth checks the health of the delivery service.
 	GetHealth(context.Context, *HealthRequest) (*HealthResponse, error)
+	// UpdateCourierStatus: BKND-01 — courier updates own status (D-01).
+	UpdateCourierStatus(context.Context, *UpdateCourierStatusRequest) (*UpdateCourierStatusResponse, error)
+	// ListAvailableOrders: BKND-02 — list orders available for this courier's zones (D-04, D-05).
+	ListAvailableOrders(context.Context, *ListAvailableOrdersRequest) (*ListAvailableOrdersResponse, error)
+	// AcceptOrder: BKND-03 — courier accepts an unassigned delivery (D-07..D-09).
+	AcceptOrder(context.Context, *AcceptOrderRequest) (*AcceptOrderResponse, error)
+	// GetDeliveryByOrderID: BKND-04 — cross-service lookup used by order-service (D-10).
+	GetDeliveryByOrderID(context.Context, *GetDeliveryByOrderIDRequest) (*GetDeliveryByOrderIDResponse, error)
 	mustEmbedUnimplementedDeliveryServiceServer()
 }
 
@@ -214,8 +291,23 @@ func (UnimplementedDeliveryServiceServer) RateCourier(context.Context, *RateCour
 func (UnimplementedDeliveryServiceServer) GetCourierRating(context.Context, *GetCourierRatingRequest) (*GetCourierRatingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCourierRating not implemented")
 }
+func (UnimplementedDeliveryServiceServer) GetCourierProfile(context.Context, *GetCourierProfileRequest) (*GetCourierProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCourierProfile not implemented")
+}
 func (UnimplementedDeliveryServiceServer) GetHealth(context.Context, *HealthRequest) (*HealthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHealth not implemented")
+}
+func (UnimplementedDeliveryServiceServer) UpdateCourierStatus(context.Context, *UpdateCourierStatusRequest) (*UpdateCourierStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCourierStatus not implemented")
+}
+func (UnimplementedDeliveryServiceServer) ListAvailableOrders(context.Context, *ListAvailableOrdersRequest) (*ListAvailableOrdersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAvailableOrders not implemented")
+}
+func (UnimplementedDeliveryServiceServer) AcceptOrder(context.Context, *AcceptOrderRequest) (*AcceptOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptOrder not implemented")
+}
+func (UnimplementedDeliveryServiceServer) GetDeliveryByOrderID(context.Context, *GetDeliveryByOrderIDRequest) (*GetDeliveryByOrderIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDeliveryByOrderID not implemented")
 }
 func (UnimplementedDeliveryServiceServer) mustEmbedUnimplementedDeliveryServiceServer() {}
 func (UnimplementedDeliveryServiceServer) testEmbeddedByValue()                         {}
@@ -382,6 +474,24 @@ func _DeliveryService_GetCourierRating_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DeliveryService_GetCourierProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCourierProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).GetCourierProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_GetCourierProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).GetCourierProfile(ctx, req.(*GetCourierProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DeliveryService_GetHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HealthRequest)
 	if err := dec(in); err != nil {
@@ -396,6 +506,78 @@ func _DeliveryService_GetHealth_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DeliveryServiceServer).GetHealth(ctx, req.(*HealthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeliveryService_UpdateCourierStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCourierStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).UpdateCourierStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_UpdateCourierStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).UpdateCourierStatus(ctx, req.(*UpdateCourierStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeliveryService_ListAvailableOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAvailableOrdersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).ListAvailableOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_ListAvailableOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).ListAvailableOrders(ctx, req.(*ListAvailableOrdersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeliveryService_AcceptOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).AcceptOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_AcceptOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).AcceptOrder(ctx, req.(*AcceptOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeliveryService_GetDeliveryByOrderID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeliveryByOrderIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).GetDeliveryByOrderID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_GetDeliveryByOrderID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).GetDeliveryByOrderID(ctx, req.(*GetDeliveryByOrderIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -440,8 +622,28 @@ var DeliveryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DeliveryService_GetCourierRating_Handler,
 		},
 		{
+			MethodName: "GetCourierProfile",
+			Handler:    _DeliveryService_GetCourierProfile_Handler,
+		},
+		{
 			MethodName: "GetHealth",
 			Handler:    _DeliveryService_GetHealth_Handler,
+		},
+		{
+			MethodName: "UpdateCourierStatus",
+			Handler:    _DeliveryService_UpdateCourierStatus_Handler,
+		},
+		{
+			MethodName: "ListAvailableOrders",
+			Handler:    _DeliveryService_ListAvailableOrders_Handler,
+		},
+		{
+			MethodName: "AcceptOrder",
+			Handler:    _DeliveryService_AcceptOrder_Handler,
+		},
+		{
+			MethodName: "GetDeliveryByOrderID",
+			Handler:    _DeliveryService_GetDeliveryByOrderID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

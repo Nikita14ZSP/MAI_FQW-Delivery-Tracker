@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package menu.v1;
+
+option go_package = "github.com/mozgovojnikita/delivery-tracker/gen/menu/v1;menuv1";
+
+import "google/api/annotations.proto";
+
+// MenuCategory represents a category of menu items (e.g., Закуски, Горячее).
+message MenuCategory {
+  string id = 1;
+  string name = 2;
+  int32 sort_order = 3;
+}
+
+// MenuItem represents a single dish in the menu catalog.
+message MenuItem {
+  string id = 1;
+  string category_id = 2;
+  string name = 3;
+  double price = 4;
+  string image_url = 5;
+  bool available = 6;
+}
+
+// ListMenuCategoriesRequest is the request message for ListMenuCategories RPC.
+message ListMenuCategoriesRequest {}
+
+// ListMenuCategoriesResponse is the response message for ListMenuCategories RPC.
+message ListMenuCategoriesResponse {
+  repeated MenuCategory categories = 1;
+}
+
+// ListMenuItemsRequest is the request message for ListMenuItems RPC.
+// category_id is optional; empty value returns all available items.
+message ListMenuItemsRequest {
+  string category_id = 1;
+}
+
+// ListMenuItemsResponse is the response message for ListMenuItems RPC.
+message ListMenuItemsResponse {
+  repeated MenuItem items = 1;
+}
+
+// MenuService exposes menu catalog read operations for the order flow.
+service MenuService {
+  rpc ListMenuCategories(ListMenuCategoriesRequest) returns (ListMenuCategoriesResponse) {
+    option (google.api.http) = { get: "/v1/menu/categories" };
+  }
+  rpc ListMenuItems(ListMenuItemsRequest) returns (ListMenuItemsResponse) {
+    option (google.api.http) = { get: "/v1/menu/items" };
+  }
+}

@@ -25,6 +25,8 @@ const (
 	OrderService_UpdateOrderStatus_FullMethodName = "/order.v1.OrderService/UpdateOrderStatus"
 	OrderService_CancelOrder_FullMethodName       = "/order.v1.OrderService/CancelOrder"
 	OrderService_GetHealth_FullMethodName         = "/order.v1.OrderService/GetHealth"
+	OrderService_GetOrdersByIDs_FullMethodName    = "/order.v1.OrderService/GetOrdersByIDs"
+	OrderService_GetUsersByIDs_FullMethodName     = "/order.v1.OrderService/GetUsersByIDs"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -45,6 +47,12 @@ type OrderServiceClient interface {
 	CancelOrder(ctx context.Context, in *CancelOrderRequest, opts ...grpc.CallOption) (*CancelOrderResponse, error)
 	// GetHealth checks the health of the order service.
 	GetHealth(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	// GetOrdersByIDs is an internal bulk-fetch RPC used by delivery-service to enrich ListAvailableOrders preview.
+	// Not exposed via REST (no google.api.http). Returns total_price (sum of item.price * quantity) and items_count.
+	GetOrdersByIDs(ctx context.Context, in *GetOrdersByIDsRequest, opts ...grpc.CallOption) (*GetOrdersByIDsResponse, error)
+	// GetUsersByIDs is an internal bulk-fetch RPC used by delivery-service
+	// to resolve courier names (RATE-05). Not exposed via REST (no google.api.http).
+	GetUsersByIDs(ctx context.Context, in *GetUsersByIDsRequest, opts ...grpc.CallOption) (*GetUsersByIDsResponse, error)
 }
 
 type orderServiceClient struct {
@@ -115,6 +123,26 @@ func (c *orderServiceClient) GetHealth(ctx context.Context, in *HealthRequest, o
 	return out, nil
 }
 
+func (c *orderServiceClient) GetOrdersByIDs(ctx context.Context, in *GetOrdersByIDsRequest, opts ...grpc.CallOption) (*GetOrdersByIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOrdersByIDsResponse)
+	err := c.cc.Invoke(ctx, OrderService_GetOrdersByIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) GetUsersByIDs(ctx context.Context, in *GetUsersByIDsRequest, opts ...grpc.CallOption) (*GetUsersByIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUsersByIDsResponse)
+	err := c.cc.Invoke(ctx, OrderService_GetUsersByIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -133,6 +161,12 @@ type OrderServiceServer interface {
 	CancelOrder(context.Context, *CancelOrderRequest) (*CancelOrderResponse, error)
 	// GetHealth checks the health of the order service.
 	GetHealth(context.Context, *HealthRequest) (*HealthResponse, error)
+	// GetOrdersByIDs is an internal bulk-fetch RPC used by delivery-service to enrich ListAvailableOrders preview.
+	// Not exposed via REST (no google.api.http). Returns total_price (sum of item.price * quantity) and items_count.
+	GetOrdersByIDs(context.Context, *GetOrdersByIDsRequest) (*GetOrdersByIDsResponse, error)
+	// GetUsersByIDs is an internal bulk-fetch RPC used by delivery-service
+	// to resolve courier names (RATE-05). Not exposed via REST (no google.api.http).
+	GetUsersByIDs(context.Context, *GetUsersByIDsRequest) (*GetUsersByIDsResponse, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -160,6 +194,12 @@ func (UnimplementedOrderServiceServer) CancelOrder(context.Context, *CancelOrder
 }
 func (UnimplementedOrderServiceServer) GetHealth(context.Context, *HealthRequest) (*HealthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHealth not implemented")
+}
+func (UnimplementedOrderServiceServer) GetOrdersByIDs(context.Context, *GetOrdersByIDsRequest) (*GetOrdersByIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetOrdersByIDs not implemented")
+}
+func (UnimplementedOrderServiceServer) GetUsersByIDs(context.Context, *GetUsersByIDsRequest) (*GetUsersByIDsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUsersByIDs not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -290,6 +330,42 @@ func _OrderService_GetHealth_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_GetOrdersByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrdersByIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetOrdersByIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetOrdersByIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetOrdersByIDs(ctx, req.(*GetOrdersByIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_GetUsersByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUsersByIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).GetUsersByIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_GetUsersByIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).GetUsersByIDs(ctx, req.(*GetUsersByIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -320,6 +396,14 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetHealth",
 			Handler:    _OrderService_GetHealth_Handler,
+		},
+		{
+			MethodName: "GetOrdersByIDs",
+			Handler:    _OrderService_GetOrdersByIDs_Handler,
+		},
+		{
+			MethodName: "GetUsersByIDs",
+			Handler:    _OrderService_GetUsersByIDs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
