@@ -37,6 +37,11 @@ type Order struct {
 	CancelReason    string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+
+	// DeliveryID is the associated delivery's ID, populated by GetOrder via
+	// cross-service lookup against delivery-service (BKND-04 D-10).
+	// Empty string when no delivery is assigned or delivery-service is unavailable.
+	DeliveryID string
 }
 
 // CreateOrderInput holds the input data for creating a new order.

@@ -1,10 +1,21 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	pkgerrors "github.com/mozgovojnikita/delivery-tracker/pkg/errors"
+)
+
+// Typed sentinel errors for courier status and delivery acceptance flows.
+// Mapped to gRPC codes.Aborted (→ HTTP 409) in toGRPCError.
+var (
+	ErrInvalidStatusTransition = errors.New("invalid_status_transition")
+	ErrActiveDeliveryExists    = errors.New("active_delivery_exists")
+	ErrAlreadyTaken            = errors.New("already_taken")        // for plan 06-04
+	ErrMaxActiveReached        = errors.New("max_active_reached")   // for plan 06-04
+	ErrCourierOffline          = errors.New("courier_offline")      // for plan 06-04
 )
 
 // DeliveryStatus represents the current state of a delivery in the lifecycle.
@@ -84,4 +95,33 @@ type Courier struct {
 type CourierCandidate struct {
 	CourierID      string
 	DistanceMeters float64
+}
+
+// AvailableOrderRow is the repository-level result row for ListAvailableForCourier.
+// DeliveryAddress and TotalPrice/ItemsCount are filled by service layer via cross-service OrderClient.
+type AvailableOrderRow struct {
+	OrderID    string
+	DeliveryID string
+	ZoneName   string
+	CreatedAt  time.Time
+}
+
+// OrderItemEnriched is a lightweight item summary within AvailableOrderEnriched (CRDR-07).
+type OrderItemEnriched struct {
+	Name     string
+	Quantity int32
+	Price    float64
+}
+
+// AvailableOrderEnriched is the service-level result for ListAvailableOrders,
+// combining repository data with enrichment from order-service.
+type AvailableOrderEnriched struct {
+	OrderID         string
+	DeliveryID      string
+	DeliveryAddress string
+	ZoneName        string
+	TotalPrice      float64
+	ItemsCount      int32
+	CreatedAt       time.Time
+	Items           []OrderItemEnriched // CRDR-07: order composition before accept
 }

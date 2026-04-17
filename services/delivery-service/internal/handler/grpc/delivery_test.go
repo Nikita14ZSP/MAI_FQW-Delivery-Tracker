@@ -10,6 +10,7 @@ import (
 	"github.com/mozgovojnikita/delivery-tracker/services/delivery-service/internal/domain"
 	"github.com/mozgovojnikita/delivery-tracker/services/delivery-service/internal/service"
 
+	orderv1 "github.com/mozgovojnikita/delivery-tracker/gen/order/v1"
 	deliveryv1 "github.com/mozgovojnikita/delivery-tracker/gen/delivery/v1"
 	grpchandler "github.com/mozgovojnikita/delivery-tracker/services/delivery-service/internal/handler/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,15 +30,23 @@ type mockDeliveryRepository struct {
 	findNearestCourierFn func(ctx context.Context, zoneID string, lat, lng float64) (*domain.CourierCandidate, error)
 	countActiveFn        func(ctx context.Context, courierID string) (int, error)
 
-	createZoneFn          func(ctx context.Context, name, polygonGeoJSON string) (*domain.DeliveryZone, error)
-	listZonesFn           func(ctx context.Context, limit, offset int) ([]*domain.DeliveryZone, int, error)
-	findZoneByPointFn     func(ctx context.Context, lat, lng float64) (*domain.DeliveryZone, error)
+	createZoneFn      func(ctx context.Context, name, polygonGeoJSON string) (*domain.DeliveryZone, error)
+	listZonesFn       func(ctx context.Context, limit, offset int) ([]*domain.DeliveryZone, int, error)
+	findZoneByPointFn func(ctx context.Context, lat, lng float64) (*domain.DeliveryZone, error)
 
 	upsertCourierFn       func(ctx context.Context, courierID string) error
 	assignCourierToZoneFn func(ctx context.Context, courierID, zoneID string) error
 
 	calculateETAFn func(ctx context.Context, zoneID string, lat, lng float64) (time.Time, error)
+
+	// BKND-03 methods
+	acceptByCourierFn func(ctx context.Context, deliveryID, courierID string, eta time.Time) (*domain.Delivery, bool, error)
+	getCourierFn      func(ctx context.Context, courierID string) (*domain.Courier, error)
+
+	// BKND-02
+	listAvailableForCourierFn func(ctx context.Context, courierID, cursor string, limit int32) ([]domain.AvailableOrderRow, string, error)
 }
+
 
 func (m *mockDeliveryRepository) CreateDelivery(ctx context.Context, orderID, zoneID string, lat, lng float64) (*domain.Delivery, error) {
 	if m.createDeliveryFn != nil {
@@ -141,6 +150,35 @@ func (m *mockDeliveryRepository) ListByCourierID(ctx context.Context, courierID 
 	return nil, nil
 }
 
+func (m *mockDeliveryRepository) UpdateCourierStatus(ctx context.Context, courierID, newStatus string) (*domain.Courier, error) {
+	return &domain.Courier{ID: courierID, Status: newStatus}, nil
+}
+
+func (m *mockDeliveryRepository) UpdateCourierStatusToOfflineGuarded(ctx context.Context, courierID string) (*domain.Courier, bool, error) {
+	return &domain.Courier{ID: courierID, Status: "offline"}, true, nil
+}
+
+func (m *mockDeliveryRepository) AcceptByCourier(ctx context.Context, deliveryID, courierID string, eta time.Time) (*domain.Delivery, bool, error) {
+	if m.acceptByCourierFn != nil {
+		return m.acceptByCourierFn(ctx, deliveryID, courierID, eta)
+	}
+	return &domain.Delivery{ID: deliveryID, OrderID: "order-1", CourierID: courierID, Status: domain.StatusAssigned}, true, nil
+}
+
+func (m *mockDeliveryRepository) GetCourier(ctx context.Context, courierID string) (*domain.Courier, error) {
+	if m.getCourierFn != nil {
+		return m.getCourierFn(ctx, courierID)
+	}
+	return &domain.Courier{ID: courierID, Status: "available"}, nil
+}
+
+func (m *mockDeliveryRepository) ListAvailableForCourier(ctx context.Context, courierID, cursor string, limit int32) ([]domain.AvailableOrderRow, string, error) {
+	if m.listAvailableForCourierFn != nil {
+		return m.listAvailableForCourierFn(ctx, courierID, cursor, limit)
+	}
+	return nil, "", nil
+}
+
 // mockPublisher is a manual mock implementing kafka.EventPublisher.
 type mockPublisher struct {
 	publishFn func(ctx context.Context, topic, key string, value []byte) error
@@ -181,15 +219,15 @@ func (m *mockRatingRepository) GetCourierRating(ctx context.Context, courierID s
 	return &domain.CourierRatingResult{}, nil
 }
 
-// newTestHandler creates a DeliveryHandler wired with the given mock repo and publisher (no rating repo).
+// newTestHandler creates a DeliveryHandler wired with the given mock repo and publisher (no rating repo, no orderClient).
 func newTestHandler(repo *mockDeliveryRepository, pub *mockPublisher) *grpchandler.DeliveryHandler {
-	svc := service.NewDeliveryService(repo, pub, nil)
+	svc := service.NewDeliveryService(repo, pub, nil, nil, true)
 	return grpchandler.NewDeliveryHandler(svc)
 }
 
 // newTestHandlerWithRating creates a DeliveryHandler wired with repo, publisher, and rating repo.
 func newTestHandlerWithRating(repo *mockDeliveryRepository, pub *mockPublisher, ratingRepo *mockRatingRepository) *grpchandler.DeliveryHandler {
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	return grpchandler.NewDeliveryHandler(svc)
 }
 
@@ -680,3 +718,242 @@ func TestGetCourierRating_NoRatings(t *testing.T) {
 		t.Errorf("expected empty ratings, got %d", len(resp.GetRatings()))
 	}
 }
+
+// ---------------------------------------------------------------------------
+// BKND-03 handler tests — AcceptOrder error mapping (Phase 06 plan 05)
+// ---------------------------------------------------------------------------
+
+// TestAcceptOrder_HandlerErrorMapping verifies that domain sentinel errors map to
+// codes.Aborted (→ HTTP 409) and success returns a non-nil delivery.
+func TestAcceptOrder_HandlerErrorMapping(t *testing.T) {
+	cases := []struct {
+		name         string
+		repoErr      error
+		expectedCode codes.Code
+	}{
+		{
+			name:         "already_taken → Aborted",
+			repoErr:      domain.ErrAlreadyTaken,
+			expectedCode: codes.Aborted,
+		},
+		{
+			name:         "max_active_reached → Aborted",
+			repoErr:      domain.ErrMaxActiveReached,
+			expectedCode: codes.Aborted,
+		},
+		{
+			name:         "courier_offline → Aborted",
+			repoErr:      domain.ErrCourierOffline,
+			expectedCode: codes.Aborted,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &mockDeliveryRepository{
+				// GetCourier returns the courier so guard check runs; simulate error via AcceptByCourier path.
+				// For ErrCourierOffline we override GetCourier; for others AcceptByCourier.
+				getCourierFn: func(ctx context.Context, courierID string) (*domain.Courier, error) {
+					if tc.repoErr == domain.ErrCourierOffline {
+						return &domain.Courier{ID: courierID, Status: "offline"}, nil
+					}
+					return &domain.Courier{ID: courierID, Status: "available"}, nil
+				},
+				countActiveFn: func(ctx context.Context, courierID string) (int, error) {
+					if tc.repoErr == domain.ErrMaxActiveReached {
+						return domain.MaxActiveDeliveries, nil
+					}
+					return 0, nil
+				},
+				acceptByCourierFn: func(ctx context.Context, deliveryID, courierID string, eta time.Time) (*domain.Delivery, bool, error) {
+					if tc.repoErr == domain.ErrAlreadyTaken {
+						return nil, false, nil
+					}
+					return &domain.Delivery{ID: deliveryID, OrderID: "order-1", CourierID: courierID, Status: domain.StatusAssigned}, true, nil
+				},
+			}
+			handler := newTestHandler(repo, &mockPublisher{})
+			ctx := ctxWithUserID("courier-1")
+
+			_, err := handler.AcceptOrder(ctx, &deliveryv1.AcceptOrderRequest{DeliveryId: "delivery-1"})
+			if err == nil {
+				t.Fatalf("expected error for %q, got nil", tc.name)
+			}
+			st, ok := grpcstatus.FromError(err)
+			if !ok {
+				t.Fatalf("expected gRPC status error, got %T: %v", err, err)
+			}
+			if st.Code() != tc.expectedCode {
+				t.Errorf("expected %v, got %v", tc.expectedCode, st.Code())
+			}
+		})
+	}
+}
+
+// TestAcceptOrder_Success_Handler verifies that a successful accept returns a non-nil delivery.
+func TestAcceptOrder_Success_Handler(t *testing.T) {
+	handler := newTestHandler(&mockDeliveryRepository{}, &mockPublisher{})
+	ctx := ctxWithUserID("courier-1")
+
+	resp, err := handler.AcceptOrder(ctx, &deliveryv1.AcceptOrderRequest{DeliveryId: "delivery-1"})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if resp.GetDelivery() == nil {
+		t.Fatal("expected delivery in response, got nil")
+	}
+}
+
+// TestAcceptOrder_MissingUserID verifies that a missing x-user-id metadata returns Unauthenticated.
+func TestAcceptOrder_MissingUserID(t *testing.T) {
+	handler := newTestHandler(&mockDeliveryRepository{}, &mockPublisher{})
+
+	_, err := handler.AcceptOrder(context.Background(), &deliveryv1.AcceptOrderRequest{DeliveryId: "delivery-1"})
+	if err == nil {
+		t.Fatal("expected error for missing x-user-id, got nil")
+	}
+	st, _ := grpcstatus.FromError(err)
+	if st.Code() != codes.Unauthenticated {
+		t.Errorf("expected Unauthenticated, got %v", st.Code())
+	}
+}
+
+// TestAcceptOrder_MissingDeliveryID verifies that empty delivery_id returns InvalidArgument.
+func TestAcceptOrder_MissingDeliveryID(t *testing.T) {
+	handler := newTestHandler(&mockDeliveryRepository{}, &mockPublisher{})
+	ctx := ctxWithUserID("courier-1")
+
+	_, err := handler.AcceptOrder(ctx, &deliveryv1.AcceptOrderRequest{})
+	if err == nil {
+		t.Fatal("expected error for missing delivery_id, got nil")
+	}
+	st, _ := grpcstatus.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("expected InvalidArgument, got %v", st.Code())
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Phase 13 Plan 02 — handler tests (CRDR-07 wire serialization + RATE-05 GetCourierProfile)
+// ---------------------------------------------------------------------------
+
+// mockOrderClientHandler is a manual mock implementing service.OrderClient for handler tests.
+type mockOrderClientHandler struct {
+	getOrdersByIDsFn    func(ctx context.Context, in *orderv1.GetOrdersByIDsRequest) (*orderv1.GetOrdersByIDsResponse, error)
+	updateOrderStatusFn func(ctx context.Context, in *orderv1.UpdateOrderStatusRequest) (*orderv1.UpdateOrderStatusResponse, error)
+	getUsersByIDsFn     func(ctx context.Context, in *orderv1.GetUsersByIDsRequest) (*orderv1.GetUsersByIDsResponse, error)
+}
+
+func (m *mockOrderClientHandler) GetOrdersByIDs(ctx context.Context, in *orderv1.GetOrdersByIDsRequest) (*orderv1.GetOrdersByIDsResponse, error) {
+	if m.getOrdersByIDsFn != nil {
+		return m.getOrdersByIDsFn(ctx, in)
+	}
+	return &orderv1.GetOrdersByIDsResponse{}, nil
+}
+
+func (m *mockOrderClientHandler) UpdateOrderStatus(ctx context.Context, in *orderv1.UpdateOrderStatusRequest) (*orderv1.UpdateOrderStatusResponse, error) {
+	if m.updateOrderStatusFn != nil {
+		return m.updateOrderStatusFn(ctx, in)
+	}
+	return &orderv1.UpdateOrderStatusResponse{}, nil
+}
+
+func (m *mockOrderClientHandler) GetUsersByIDs(ctx context.Context, in *orderv1.GetUsersByIDsRequest) (*orderv1.GetUsersByIDsResponse, error) {
+	if m.getUsersByIDsFn != nil {
+		return m.getUsersByIDsFn(ctx, in)
+	}
+	return &orderv1.GetUsersByIDsResponse{}, nil
+}
+
+// newTestHandlerWithOrderClient creates a DeliveryHandler wired with rating repo + order client.
+func newTestHandlerWithOrderClient(repo *mockDeliveryRepository, pub *mockPublisher, ratingRepo *mockRatingRepository, oc service.OrderClient) *grpchandler.DeliveryHandler {
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, oc, true)
+	return grpchandler.NewDeliveryHandler(svc)
+}
+
+// TestListAvailableOrdersHandler_ItemsInProto verifies that the gRPC handler serializes
+// domain.AvailableOrderEnriched.Items into AvailableOrderPreview.Items on the wire (RESEARCH Pattern 3).
+// This is the WIRE-level assertion — ensures proto response carries items, not just the domain layer.
+func TestListAvailableOrdersHandler_ItemsInProto(t *testing.T) {
+	repo := &mockDeliveryRepository{
+		listAvailableForCourierFn: func(ctx context.Context, courierID, cursor string, limit int32) ([]domain.AvailableOrderRow, string, error) {
+			return []domain.AvailableOrderRow{
+				{OrderID: "o1", DeliveryID: "d1", ZoneName: "Center", CreatedAt: time.Now()},
+			}, "", nil
+		},
+	}
+	oc := &mockOrderClientHandler{
+		getOrdersByIDsFn: func(ctx context.Context, in *orderv1.GetOrdersByIDsRequest) (*orderv1.GetOrdersByIDsResponse, error) {
+			return &orderv1.GetOrdersByIDsResponse{
+				Orders: []*orderv1.OrderPreviewSlim{
+					{
+						OrderId:    "o1",
+						TotalPrice: 390.0,
+						ItemsCount: 2,
+						Items: []*orderv1.OrderItem{
+							{Name: "Пицца", Quantity: 2, Price: 390.0},
+						},
+					},
+				},
+			}, nil
+		},
+	}
+
+	handler := newTestHandlerWithOrderClient(repo, &mockPublisher{}, nil, oc)
+	ctx := ctxWithUserID("courier-1")
+
+	resp, err := handler.ListAvailableOrders(ctx, &deliveryv1.ListAvailableOrdersRequest{})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	orders := resp.GetOrders()
+	if len(orders) != 1 {
+		t.Fatalf("expected 1 order in response, got %d", len(orders))
+	}
+	items := orders[0].GetItems()
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item in proto response, got %d", len(items))
+	}
+	if items[0].GetName() != "Пицца" {
+		t.Errorf("expected item Name 'Пицца', got %q", items[0].GetName())
+	}
+	if items[0].GetQuantity() != int32(2) {
+		t.Errorf("expected item Quantity 2, got %d", items[0].GetQuantity())
+	}
+	if items[0].GetPrice() != float64(390) {
+		t.Errorf("expected item Price 390, got %v", items[0].GetPrice())
+	}
+}
+
+// TestGetCourierProfileHandler_NotFound verifies that a service ErrNotFound maps to codes.NotFound.
+func TestGetCourierProfileHandler_NotFound(t *testing.T) {
+	ratingRepo := &mockRatingRepository{
+		getCourierRatingFn: func(ctx context.Context, courierID string) (*domain.CourierRatingResult, error) {
+			return &domain.CourierRatingResult{}, nil
+		},
+	}
+	// orderClient returns empty users → service returns ErrNotFound
+	oc := &mockOrderClientHandler{
+		getUsersByIDsFn: func(ctx context.Context, in *orderv1.GetUsersByIDsRequest) (*orderv1.GetUsersByIDsResponse, error) {
+			return &orderv1.GetUsersByIDsResponse{Users: nil}, nil
+		},
+	}
+
+	handler := newTestHandlerWithOrderClient(&mockDeliveryRepository{}, &mockPublisher{}, ratingRepo, oc)
+
+	_, err := handler.GetCourierProfile(context.Background(), &deliveryv1.GetCourierProfileRequest{
+		CourierId: "courier-unknown",
+	})
+	if err == nil {
+		t.Fatal("expected error for unknown courier, got nil")
+	}
+	st, ok := grpcstatus.FromError(err)
+	if !ok {
+		t.Fatal("expected gRPC status error")
+	}
+	if st.Code() != codes.NotFound {
+		t.Errorf("expected NotFound, got %v", st.Code())
+	}
+}
+

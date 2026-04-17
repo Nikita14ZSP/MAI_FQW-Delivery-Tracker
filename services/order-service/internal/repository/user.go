@@ -14,7 +14,7 @@ import (
 
 // UserRepository defines the data access interface for users.
 type UserRepository interface {
-	Create(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error)
+	Create(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error)
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetByID(ctx context.Context, id string) (*domain.User, error)
 }
@@ -30,15 +30,16 @@ func NewUserRepository(pool *pgxpool.Pool) UserRepository {
 
 // Create inserts a new user into the database and returns the created record.
 // Returns ErrAlreadyExists if the email is already taken (unique constraint violation).
-func (r *userRepository) Create(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error) {
+// Empty phone is stored as NULL via NULLIF.
+func (r *userRepository) Create(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error) {
 	const query = `
-		INSERT INTO users (email, password_hash, first_name, last_name, role)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, email, password_hash, first_name, last_name, role, created_at, updated_at`
+		INSERT INTO users (email, password_hash, first_name, last_name, phone, role)
+		VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6)
+		RETURNING id, email, password_hash, first_name, last_name, COALESCE(phone, ''), role, created_at, updated_at`
 
 	u := &domain.User{}
-	err := r.pool.QueryRow(ctx, query, email, passwordHash, firstName, lastName, string(role)).Scan(
-		&u.ID, &u.Email, &u.PasswordHash, &u.FirstName, &u.LastName, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+	err := r.pool.QueryRow(ctx, query, email, passwordHash, firstName, lastName, phone, string(role)).Scan(
+		&u.ID, &u.Email, &u.PasswordHash, &u.FirstName, &u.LastName, &u.Phone, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -54,13 +55,13 @@ func (r *userRepository) Create(ctx context.Context, email, passwordHash, firstN
 // Returns ErrNotFound if no user exists with that email.
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	const query = `
-		SELECT id, email, password_hash, first_name, last_name, role, created_at, updated_at
+		SELECT id, email, password_hash, first_name, last_name, COALESCE(phone, ''), role, created_at, updated_at
 		FROM users
 		WHERE email = $1`
 
 	u := &domain.User{}
 	err := r.pool.QueryRow(ctx, query, email).Scan(
-		&u.ID, &u.Email, &u.PasswordHash, &u.FirstName, &u.LastName, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+		&u.ID, &u.Email, &u.PasswordHash, &u.FirstName, &u.LastName, &u.Phone, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -75,13 +76,13 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.
 // Returns ErrNotFound if no user exists with that ID.
 func (r *userRepository) GetByID(ctx context.Context, id string) (*domain.User, error) {
 	const query = `
-		SELECT id, email, password_hash, first_name, last_name, role, created_at, updated_at
+		SELECT id, email, password_hash, first_name, last_name, COALESCE(phone, ''), role, created_at, updated_at
 		FROM users
 		WHERE id = $1`
 
 	u := &domain.User{}
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&u.ID, &u.Email, &u.PasswordHash, &u.FirstName, &u.LastName, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+		&u.ID, &u.Email, &u.PasswordHash, &u.FirstName, &u.LastName, &u.Phone, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {

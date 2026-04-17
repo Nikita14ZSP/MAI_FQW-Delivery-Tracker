@@ -92,6 +92,155 @@ func TestAuthHandler_Register_Success(t *testing.T) {
 	}
 }
 
+func TestAuthHandler_Register_WithValidPhone(t *testing.T) {
+	var capturedPhone string
+	mock := &mockAuthService{
+		registerFn: func(ctx context.Context, input service.RegisterInput) (*service.TokenPair, *domain.User, error) {
+			capturedPhone = input.Phone
+			return &service.TokenPair{
+					AccessToken:  "access-token-value",
+					RefreshToken: "refresh-token-value",
+				}, &domain.User{
+					ID:    "user-phone-1",
+					Email: input.Email,
+					Phone: input.Phone,
+					Role:  domain.RoleUser,
+				}, nil
+		},
+	}
+	handler := httphandler.NewAuthHandler(mock).Routes()
+	w := postJSON(t, handler, "/register", map[string]string{
+		"email":      "phone@example.com",
+		"password":   "securepassword123",
+		"first_name": "Иван",
+		"last_name":  "Иванов",
+		"phone":      "+79991234567",
+	})
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status 201, got %d: %s", w.Code, w.Body.String())
+	}
+	if capturedPhone != "+79991234567" {
+		t.Errorf("expected service to receive phone=+79991234567, got %q", capturedPhone)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	user, ok := resp["user"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected user object in response, got: %v", resp["user"])
+	}
+	if user["phone"] != "+79991234567" {
+		t.Errorf("expected user.phone=+79991234567 in response, got %v", user["phone"])
+	}
+}
+
+func TestAuthHandler_Register_WithoutPhoneSucceeds(t *testing.T) {
+	var capturedPhone string
+	mock := &mockAuthService{
+		registerFn: func(ctx context.Context, input service.RegisterInput) (*service.TokenPair, *domain.User, error) {
+			capturedPhone = input.Phone
+			return &service.TokenPair{
+					AccessToken:  "access-token-value",
+					RefreshToken: "refresh-token-value",
+				}, &domain.User{
+					ID:    "user-no-phone",
+					Email: input.Email,
+					Role:  domain.RoleUser,
+				}, nil
+		},
+	}
+	handler := httphandler.NewAuthHandler(mock).Routes()
+	w := postJSON(t, handler, "/register", map[string]string{
+		"email":      "nophone@example.com",
+		"password":   "securepassword123",
+		"first_name": "Иван",
+		"last_name":  "Иванов",
+	})
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status 201, got %d: %s", w.Code, w.Body.String())
+	}
+	if capturedPhone != "" {
+		t.Errorf("expected service to receive empty phone, got %q", capturedPhone)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	user, ok := resp["user"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected user object in response, got: %v", resp["user"])
+	}
+	// Phone should be either absent (omitempty) or empty string
+	if phone, exists := user["phone"]; exists && phone != "" {
+		t.Errorf("expected user.phone to be empty/omitted, got %v", phone)
+	}
+}
+
+func TestAuthHandler_Register_WithInvalidPhone(t *testing.T) {
+	mock := &mockAuthService{
+		registerFn: func(ctx context.Context, input service.RegisterInput) (*service.TokenPair, *domain.User, error) {
+			// Service-layer validation should reject invalid phone
+			return nil, nil, pkgerrors.ErrInvalidInput
+		},
+	}
+	handler := httphandler.NewAuthHandler(mock).Routes()
+	w := postJSON(t, handler, "/register", map[string]string{
+		"email":      "bad@example.com",
+		"password":   "securepassword123",
+		"first_name": "Иван",
+		"last_name":  "Иванов",
+		"phone":      "12345",
+	})
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 (invalid input), got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAuthHandler_Register_WithCourierRole(t *testing.T) {
+	mock := &mockAuthService{
+		registerFn: func(ctx context.Context, input service.RegisterInput) (*service.TokenPair, *domain.User, error) {
+			return &service.TokenPair{
+					AccessToken:  "access-token-value",
+					RefreshToken: "refresh-token-value",
+				}, &domain.User{
+					ID:    "courier-1",
+					Email: input.Email,
+					Role:  input.Role,
+				}, nil
+		},
+	}
+	handler := httphandler.NewAuthHandler(mock).Routes()
+	w := postJSON(t, handler, "/register", map[string]string{
+		"email":      "c@x.io",
+		"password":   "password123",
+		"first_name": "C",
+		"last_name":  "X",
+		"role":       "courier",
+	})
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("expected status 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	user, ok := resp["user"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected user object in response, got: %v", resp["user"])
+	}
+	if user["role"] != "courier" {
+		t.Errorf("expected role=courier in response, got %v", user["role"])
+	}
+}
+
 func TestAuthHandler_Register_InvalidInput(t *testing.T) {
 	mock := &mockAuthService{
 		registerFn: func(ctx context.Context, input service.RegisterInput) (*service.TokenPair, *domain.User, error) {

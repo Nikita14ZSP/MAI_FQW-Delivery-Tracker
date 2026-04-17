@@ -18,6 +18,8 @@ type registerRequest struct {
 	Password  string `json:"password"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
+	Phone     string `json:"phone,omitempty"`
+	Role      string `json:"role"`
 }
 
 // loginRequest is the request body for login.
@@ -37,6 +39,7 @@ type userResponse struct {
 	Email     string `json:"email"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
+	Phone     string `json:"phone,omitempty"`
 	Role      string `json:"role"`
 }
 
@@ -98,6 +101,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Password:  req.Password,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
+		Phone:     req.Phone,
+		Role:      domain.Role(req.Role),
 	})
 	if err != nil {
 		writeError(w, err)
@@ -218,6 +223,7 @@ func toUserResponse(u *domain.User) userResponse {
 		Email:     u.Email,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
+		Phone:     u.Phone,
 		Role:      string(u.Role),
 	}
 }

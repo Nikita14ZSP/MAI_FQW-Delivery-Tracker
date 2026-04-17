@@ -17,10 +17,12 @@ import (
 
 // RegisterInput holds the input for user registration.
 type RegisterInput struct {
-	Email     string `validate:"required,email"`
-	Password  string `validate:"required,min=8"`
-	FirstName string `validate:"required,min=1,max=100"`
-	LastName  string `validate:"required,min=1,max=100"`
+	Email     string      `validate:"required,email"`
+	Password  string      `validate:"required,min=8"`
+	FirstName string      `validate:"required,min=1,max=100"`
+	LastName  string      `validate:"required,min=1,max=100"`
+	Phone     string      `validate:"omitempty,e164"`
+	Role      domain.Role `validate:"required,oneof=user courier"`
 }
 
 // LoginInput holds the input for user login.
@@ -66,6 +68,9 @@ func NewAuthService(userRepo repository.UserRepository, redisClient *redis.Clien
 
 // Register creates a new user with a hashed password and returns a token pair.
 func (s *AuthService) Register(ctx context.Context, input RegisterInput) (*TokenPair, *domain.User, error) {
+	if input.Role == "" {
+		input.Role = domain.RoleUser
+	}
 	if err := s.validate.Struct(input); err != nil {
 		return nil, nil, fmt.Errorf("validate: %w", pkgerrors.ErrInvalidInput)
 	}
@@ -75,7 +80,7 @@ func (s *AuthService) Register(ctx context.Context, input RegisterInput) (*Token
 		return nil, nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	user, err := s.userRepo.Create(ctx, input.Email, hash, input.FirstName, input.LastName, domain.RoleUser)
+	user, err := s.userRepo.Create(ctx, input.Email, hash, input.FirstName, input.LastName, input.Phone, input.Role)
 	if err != nil {
 		return nil, nil, err
 	}

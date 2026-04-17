@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	grpccodes "google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
+
+	deliveryv1 "github.com/mozgovojnikita/delivery-tracker/gen/delivery/v1"
 	pkgerrors "github.com/mozgovojnikita/delivery-tracker/pkg/errors"
 	pkgkafka "github.com/mozgovojnikita/delivery-tracker/pkg/kafka"
 	"github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/domain"
@@ -16,6 +20,7 @@ import (
 type mockOrderRepository struct {
 	createFn       func(ctx context.Context, input domain.CreateOrderInput) (*domain.Order, error)
 	getByIDFn      func(ctx context.Context, id string) (*domain.Order, error)
+	getByIDsFn     func(ctx context.Context, ids []string) ([]*domain.Order, error)
 	listByUserIDFn func(ctx context.Context, userID string, status *domain.OrderStatus, page, pageSize int) ([]*domain.Order, int, error)
 	updateStatusFn func(ctx context.Context, id string, status domain.OrderStatus, cancelReason string) (*domain.Order, error)
 }
@@ -32,6 +37,13 @@ func (m *mockOrderRepository) GetByID(ctx context.Context, id string) (*domain.O
 		return m.getByIDFn(ctx, id)
 	}
 	return nil, pkgerrors.ErrNotFound
+}
+
+func (m *mockOrderRepository) GetByIDs(ctx context.Context, ids []string) ([]*domain.Order, error) {
+	if m.getByIDsFn != nil {
+		return m.getByIDsFn(ctx, ids)
+	}
+	return nil, nil
 }
 
 func (m *mockOrderRepository) ListByUserID(ctx context.Context, userID string, status *domain.OrderStatus, page, pageSize int) ([]*domain.Order, int, error) {
@@ -105,6 +117,108 @@ func TestOrderService_CreateOrder_Success(t *testing.T) {
 	}
 	if order.Status != domain.StatusCreated {
 		t.Errorf("expected status created, got %s", order.Status)
+	}
+}
+
+func TestOrderService_CreateOrder_PublishesOrderCreated(t *testing.T) {
+	repo := &mockOrderRepository{
+		createFn: func(ctx context.Context, input domain.CreateOrderInput) (*domain.Order, error) {
+			return &domain.Order{
+				ID:              "order-1",
+				UserID:          input.UserID,
+				Status:          domain.StatusCreated,
+				DeliveryAddress: input.DeliveryAddress,
+				CreatedAt:       time.Now(),
+				UpdatedAt:       time.Now(),
+			}, nil
+		},
+	}
+	pub := &mockPublisher{}
+	svc := service.NewOrderService(repo, pub)
+
+	order, err := svc.CreateOrder(context.Background(), domain.CreateOrderInput{
+		UserID:          "user-1",
+		DeliveryAddress: "123 Main St",
+		ContactPhone:    "+7-999-000-0000",
+		PaymentMethod:   "card",
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if order == nil {
+		t.Fatal("expected order, got nil")
+	}
+
+	// Exactly one publish call, to orders.created, keyed by order ID.
+	if len(pub.publishCalls) != 1 {
+		t.Fatalf("expected exactly 1 publish call, got %d", len(pub.publishCalls))
+	}
+
+	topicsPublished := make(map[string]bool)
+	for _, call := range pub.publishCalls {
+		topicsPublished[call.topic] = true
+	}
+	if !topicsPublished[pkgkafka.TopicOrdersCreated] {
+		t.Errorf("expected publish to %s, but it was not called", pkgkafka.TopicOrdersCreated)
+	}
+	if topicsPublished[pkgkafka.TopicOrdersUpdated] {
+		t.Errorf("did not expect publish to %s on order creation", pkgkafka.TopicOrdersUpdated)
+	}
+	if pub.publishCalls[0].key != order.ID {
+		t.Errorf("expected publish key to be order ID %q, got %q", order.ID, pub.publishCalls[0].key)
+	}
+}
+
+func TestOrderService_CreateOrder_PublishFailureDoesNotFail(t *testing.T) {
+	repo := &mockOrderRepository{
+		createFn: func(ctx context.Context, input domain.CreateOrderInput) (*domain.Order, error) {
+			return &domain.Order{
+				ID:              "order-1",
+				UserID:          input.UserID,
+				Status:          domain.StatusCreated,
+				DeliveryAddress: input.DeliveryAddress,
+			}, nil
+		},
+	}
+	// Publisher that always returns an error (Kafka unavailable).
+	pub := &mockPublisher{err: errors.New("kafka unavailable")}
+	svc := service.NewOrderService(repo, pub)
+
+	order, err := svc.CreateOrder(context.Background(), domain.CreateOrderInput{
+		UserID:          "user-1",
+		DeliveryAddress: "123 Main St",
+	})
+	if err != nil {
+		t.Fatalf("publish failure should not fail CreateOrder, got: %v", err)
+	}
+	if order == nil {
+		t.Fatal("expected order to be returned even when publish fails")
+	}
+}
+
+func TestOrderService_CreateOrder_NilPublisherOK(t *testing.T) {
+	repo := &mockOrderRepository{
+		createFn: func(ctx context.Context, input domain.CreateOrderInput) (*domain.Order, error) {
+			return &domain.Order{
+				ID:              "order-1",
+				UserID:          input.UserID,
+				Status:          domain.StatusCreated,
+				DeliveryAddress: input.DeliveryAddress,
+			}, nil
+		},
+	}
+	// nil publisher must not panic (nil-guard).
+	svc := service.NewOrderService(repo, nil)
+
+	order, err := svc.CreateOrder(context.Background(), domain.CreateOrderInput{
+		UserID:          "user-1",
+		DeliveryAddress: "123 Main St",
+	})
+	if err != nil {
+		t.Fatalf("expected no error with nil publisher, got: %v", err)
+	}
+	if order == nil {
+		t.Fatal("expected order, got nil")
 	}
 }
 
@@ -221,7 +335,7 @@ func TestOrderService_CancelOrder_FromInTransit(t *testing.T) {
 	}
 }
 
-func TestUpdateStatus_PublishesOrderCreatedOnConfirmed(t *testing.T) {
+func TestUpdateStatus_ConfirmedPublishesOnlyOrderUpdated(t *testing.T) {
 	repo := &mockOrderRepository{
 		getByIDFn: func(ctx context.Context, id string) (*domain.Order, error) {
 			return &domain.Order{
@@ -246,9 +360,11 @@ func TestUpdateStatus_PublishesOrderCreatedOnConfirmed(t *testing.T) {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 
-	// Should have published both orders.updated and orders.created
-	if len(pub.publishCalls) < 2 {
-		t.Fatalf("expected at least 2 publish calls (updated + created), got %d", len(pub.publishCalls))
+	// A created->confirmed transition must publish ONLY orders.updated.
+	// orders.created fires exclusively at order creation (CreateOrder), never on
+	// a status transition — republishing it here would double-create a delivery.
+	if len(pub.publishCalls) == 0 {
+		t.Fatal("expected at least one publish call for orders.updated")
 	}
 
 	topicsPublished := make(map[string]bool)
@@ -256,11 +372,11 @@ func TestUpdateStatus_PublishesOrderCreatedOnConfirmed(t *testing.T) {
 		topicsPublished[call.topic] = true
 	}
 
-	if !topicsPublished[pkgkafka.TopicOrdersCreated] {
-		t.Errorf("expected publish to %s, but it was not called", pkgkafka.TopicOrdersCreated)
-	}
 	if !topicsPublished[pkgkafka.TopicOrdersUpdated] {
 		t.Errorf("expected publish to %s, but it was not called", pkgkafka.TopicOrdersUpdated)
+	}
+	if topicsPublished[pkgkafka.TopicOrdersCreated] {
+		t.Errorf("did not expect publish to %s on a confirmed transition", pkgkafka.TopicOrdersCreated)
 	}
 }
 
@@ -309,6 +425,93 @@ func TestUpdateStatus_PublishesOrderUpdatedOnEveryTransition(t *testing.T) {
 		if call.topic == pkgkafka.TopicOrdersCreated {
 			t.Errorf("did not expect publish to %s for non-confirmed transition", pkgkafka.TopicOrdersCreated)
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Wave 0 stubs — BKND-04 (Phase 06 backend gaps)
+// ---------------------------------------------------------------------------
+
+// stubDeliveryClient is a hand-rolled mock of service.DeliveryClient for order-service tests.
+type stubDeliveryClient struct {
+	resp *deliveryv1.GetDeliveryByOrderIDResponse
+	err  error
+}
+
+func (s *stubDeliveryClient) GetDeliveryByOrderID(ctx context.Context, in *deliveryv1.GetDeliveryByOrderIDRequest) (*deliveryv1.GetDeliveryByOrderIDResponse, error) {
+	return s.resp, s.err
+}
+
+// Ensure stubDeliveryClient implements service.DeliveryClient.
+var _ service.DeliveryClient = (*stubDeliveryClient)(nil)
+
+// TestGetOrder_IncludesDeliveryID verifies that when DeliveryClient.GetDeliveryByOrderID returns
+// a delivery, the order's DeliveryID field is populated from the delivery's ID.
+// BKND-04 D-10.
+func TestGetOrder_IncludesDeliveryID(t *testing.T) {
+	repo := &mockOrderRepository{
+		getByIDFn: func(ctx context.Context, id string) (*domain.Order, error) {
+			return &domain.Order{ID: id, UserID: "user-1", Status: domain.StatusCreated}, nil
+		},
+	}
+	dc := &stubDeliveryClient{
+		resp: &deliveryv1.GetDeliveryByOrderIDResponse{
+			Delivery: &deliveryv1.Delivery{Id: "delivery-xyz"},
+		},
+	}
+	svc := service.NewOrderService(repo, nil).WithDeliveryClient(dc)
+
+	order, err := svc.GetOrder(context.Background(), "order-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if order.DeliveryID != "delivery-xyz" {
+		t.Errorf("expected DeliveryID=delivery-xyz, got %q", order.DeliveryID)
+	}
+}
+
+// TestGetOrder_GracefulDegradation verifies that when DeliveryClient returns ErrNotFound,
+// the order's DeliveryID stays empty and no error is returned (D-10 graceful empty).
+func TestGetOrder_GracefulDegradation(t *testing.T) {
+	repo := &mockOrderRepository{
+		getByIDFn: func(ctx context.Context, id string) (*domain.Order, error) {
+			return &domain.Order{ID: id, UserID: "user-1", Status: domain.StatusCreated}, nil
+		},
+	}
+	dc := &stubDeliveryClient{
+		err: pkgerrors.ErrNotFound,
+	}
+	svc := service.NewOrderService(repo, nil).WithDeliveryClient(dc)
+
+	order, err := svc.GetOrder(context.Background(), "order-1")
+	if err != nil {
+		t.Fatalf("expected no error (graceful empty), got: %v", err)
+	}
+	if order.DeliveryID != "" {
+		t.Errorf("expected empty DeliveryID, got %q", order.DeliveryID)
+	}
+}
+
+// TestGetOrder_DeliveryServiceUnavailable verifies that when DeliveryClient returns
+// codes.Unavailable (delivery-service down), the order's DeliveryID stays empty
+// and no error is returned (graceful degradation).
+func TestGetOrder_DeliveryServiceUnavailable(t *testing.T) {
+	repo := &mockOrderRepository{
+		getByIDFn: func(ctx context.Context, id string) (*domain.Order, error) {
+			return &domain.Order{ID: id, UserID: "user-1", Status: domain.StatusCreated}, nil
+		},
+	}
+	dc := &stubDeliveryClient{
+		err: grpcstatus.Error(grpccodes.Unavailable, "connection refused"),
+	}
+	svc := service.NewOrderService(repo, nil).WithDeliveryClient(dc)
+
+	order, err := svc.GetOrder(context.Background(), "order-1")
+	if err != nil {
+		t.Fatalf("expected no error (graceful degradation), got: %v", err)
+	}
+	if order.DeliveryID != "" {
+		t.Errorf("expected empty DeliveryID on unavailable, got %q", order.DeliveryID)
 	}
 }
 

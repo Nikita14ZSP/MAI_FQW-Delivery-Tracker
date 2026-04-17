@@ -22,6 +22,7 @@ type User struct {
 	PasswordHash string
 	FirstName    string
 	LastName     string
+	Phone        string
 	Role         Role
 	CreatedAt    time.Time
 	UpdatedAt    time.Time

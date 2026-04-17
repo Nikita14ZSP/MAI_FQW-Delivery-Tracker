@@ -20,9 +20,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
+	deliveryv1 "github.com/mozgovojnikita/delivery-tracker/gen/delivery/v1"
+	menuv1 "github.com/mozgovojnikita/delivery-tracker/gen/menu/v1"
 	orderv1 "github.com/mozgovojnikita/delivery-tracker/gen/order/v1"
 	"github.com/mozgovojnikita/delivery-tracker/pkg/config"
+	"github.com/mozgovojnikita/delivery-tracker/pkg/grpclient"
 	"github.com/mozgovojnikita/delivery-tracker/pkg/health"
 	pkgkafka "github.com/mozgovojnikita/delivery-tracker/pkg/kafka"
 	pkglogger "github.com/mozgovojnikita/delivery-tracker/pkg/logger"
@@ -30,6 +34,7 @@ import (
 	"github.com/mozgovojnikita/delivery-tracker/pkg/postgres"
 	grpchandler "github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/handler/grpc"
 	httphandler "github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/handler/http"
+	orderkafka "github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/kafka"
 	"github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/repository"
 	"github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/service"
 )
@@ -89,13 +94,37 @@ func main() {
 	// Repositories
 	userRepo := repository.NewUserRepository(pool)
 	orderRepo := repository.NewOrderRepository(pool)
+	menuRepo := repository.NewMenuRepository(pool)
+
+	// Wire delivery-service gRPC client (BKND-04): singleton with retry + circuit breaker.
+	// Uses service_started (not service_healthy) to avoid circular depends_on with delivery-service.
+	deliveryServiceGRPC := os.Getenv("DELIVERY_SERVICE_GRPC")
+	if deliveryServiceGRPC == "" {
+		deliveryServiceGRPC = "delivery-service:9090"
+	}
+	deliveryConn, err := grpc.NewClient(
+		deliveryServiceGRPC,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainUnaryInterceptor(
+			grpclient.NewCircuitBreakerInterceptor("delivery-service"),
+			grpclient.NewRetryInterceptor(),
+		),
+	)
+	if err != nil {
+		slog.Error("failed to create delivery-service gRPC client", "err", err)
+		os.Exit(1)
+	}
+	defer deliveryConn.Close()
+	deliveryClient := service.NewGRPCDeliveryClient(deliveryv1.NewDeliveryServiceClient(deliveryConn))
 
 	// Services
 	authSvc := service.NewAuthService(userRepo, redisClient, jwtSecret)
-	orderSvc := service.NewOrderService(orderRepo, publisher)
+	orderSvc := service.NewOrderService(orderRepo, publisher).WithDeliveryClient(deliveryClient)
+	menuSvc := service.NewMenuService(menuRepo)
 
 	// HTTP router (auth endpoints + health + metrics)
 	r := chi.NewRouter()
+	r.Use(middleware.Metrics)
 	r.Use(middleware.TraceID)
 	r.Get("/health", health.Handler())
 	r.Handle("/metrics", promhttp.Handler())
@@ -108,7 +137,8 @@ func main() {
 		grpc.ChainUnaryInterceptor(grpcprom.UnaryServerInterceptor),
 		grpc.ChainStreamInterceptor(grpcprom.StreamServerInterceptor),
 	)
-	orderv1.RegisterOrderServiceServer(grpcServer, grpchandler.NewOrderHandler(orderSvc))
+	orderv1.RegisterOrderServiceServer(grpcServer, grpchandler.NewOrderHandler(orderSvc, userRepo))
+	menuv1.RegisterMenuServiceServer(grpcServer, grpchandler.NewMenuHandler(menuSvc))
 	grpcprom.Register(grpcServer)
 
 	lis, err := net.Listen("tcp", ":"+cfg.GRPCPort)
@@ -135,6 +165,23 @@ func main() {
 			stop()
 		}
 	}()
+
+	// Delivery event consumers (read side of the delivery->order status sync).
+	// Guarded by the SAME cfg.KafkaBrokers condition as the producer: readers
+	// require brokers, and order-service must stay startable without Kafka.
+	// Distinct consumer groups guarantee order-service does NOT steal
+	// tracking-service's delivery.* messages — Kafka delivers to every group
+	// independently.
+	if cfg.KafkaBrokers != "" {
+		assignedReader := pkgkafka.NewConsumer(cfg.KafkaBrokers, pkgkafka.TopicDeliveryAssigned, "order-service-delivery-assigned")
+		defer assignedReader.Close()
+		statusReader := pkgkafka.NewConsumer(cfg.KafkaBrokers, pkgkafka.TopicDeliveryStatus, "order-service-delivery-status")
+		defer statusReader.Close()
+		go pkgkafka.RunConsumer(ctx, assignedReader, orderkafka.HandleDeliveryAssignedMessage(orderSvc))
+		go pkgkafka.RunConsumer(ctx, statusReader, orderkafka.HandleDeliveryStatusMessage(orderSvc))
+		slog.Info("delivery event consumers started",
+			"groups", "order-service-delivery-assigned,order-service-delivery-status")
+	}
 
 	<-ctx.Done()
 	slog.Info("shutdown signal received", "service", serviceName)

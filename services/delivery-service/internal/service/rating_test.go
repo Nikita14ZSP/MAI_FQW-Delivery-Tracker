@@ -50,7 +50,7 @@ func TestRateCourier_Success(t *testing.T) {
 	}
 	pub := &mockPublisher{}
 
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	ratingID, err := svc.RateCourier(context.Background(), "delivery-1", "user-1", 5, "great service")
 
 	if err != nil {
@@ -75,7 +75,7 @@ func TestRateCourier_NotDelivered(t *testing.T) {
 	ratingRepo := &mockRatingRepo{}
 	pub := &mockPublisher{}
 
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	_, err := svc.RateCourier(context.Background(), "delivery-1", "user-1", 4, "")
 
 	if err == nil {
@@ -96,7 +96,7 @@ func TestRateCourier_DeliveryNotFound(t *testing.T) {
 	ratingRepo := &mockRatingRepo{}
 	pub := &mockPublisher{}
 
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	_, err := svc.RateCourier(context.Background(), "nonexistent", "user-1", 3, "")
 
 	if err == nil {
@@ -125,7 +125,7 @@ func TestRateCourier_DuplicateRating(t *testing.T) {
 	}
 	pub := &mockPublisher{}
 
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	_, err := svc.RateCourier(context.Background(), "delivery-1", "user-1", 5, "")
 
 	if err == nil {
@@ -154,7 +154,7 @@ func TestRateCourier_InvalidStars(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			svc := service.NewDeliveryService(repo, pub, ratingRepo)
+			svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 			_, err := svc.RateCourier(context.Background(), "delivery-1", "user-1", tc.stars, "")
 
 			if err == nil {
@@ -187,7 +187,7 @@ func TestGetCourierRating_Success(t *testing.T) {
 	}
 	pub := &mockPublisher{}
 
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	result, err := svc.GetCourierRating(context.Background(), "courier-1")
 
 	if err != nil {
@@ -218,7 +218,7 @@ func TestGetCourierRating_NoRatings(t *testing.T) {
 	}
 	pub := &mockPublisher{}
 
-	svc := service.NewDeliveryService(repo, pub, ratingRepo)
+	svc := service.NewDeliveryService(repo, pub, ratingRepo, nil, true)
 	result, err := svc.GetCourierRating(context.Background(), "courier-new")
 
 	if err != nil {

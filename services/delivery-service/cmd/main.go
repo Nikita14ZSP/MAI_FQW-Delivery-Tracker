@@ -19,9 +19,12 @@ import (
 	grpcprom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	deliveryv1 "github.com/mozgovojnikita/delivery-tracker/gen/delivery/v1"
+	orderv1 "github.com/mozgovojnikita/delivery-tracker/gen/order/v1"
 	"github.com/mozgovojnikita/delivery-tracker/pkg/config"
+	"github.com/mozgovojnikita/delivery-tracker/pkg/grpclient"
 	"github.com/mozgovojnikita/delivery-tracker/pkg/health"
 	pkgkafka "github.com/mozgovojnikita/delivery-tracker/pkg/kafka"
 	pkglogger "github.com/mozgovojnikita/delivery-tracker/pkg/logger"
@@ -65,10 +68,35 @@ func main() {
 	producer := pkgkafka.NewProducer(cfg.KafkaBrokers)
 	defer producer.Close()
 
+	// Wire order-service gRPC client (singleton with retry + circuit breaker).
+	// Uses service_started (not service_healthy) to avoid circular depends_on with order-service.
+	orderServiceGRPC := os.Getenv("ORDER_SERVICE_GRPC")
+	if orderServiceGRPC == "" {
+		orderServiceGRPC = "order-service:9090"
+	}
+	orderConn, err := grpc.NewClient(
+		orderServiceGRPC,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainUnaryInterceptor(
+			grpclient.NewCircuitBreakerInterceptor("order-service"),
+			grpclient.NewRetryInterceptor(),
+		),
+	)
+	if err != nil {
+		slog.Error("failed to create order-service gRPC client", "err", err)
+		os.Exit(1)
+	}
+	defer orderConn.Close()
+	orderClient := service.NewGRPCOrderClient(orderv1.NewOrderServiceClient(orderConn))
+
 	// Create repository and service
 	repo := repository.NewDeliveryRepository(pool)
 	ratingRepo := repository.NewRatingRepository(pool)
-	svc := service.NewDeliveryService(repo, producer, ratingRepo)
+	// DELIVERY_AUTO_ASSIGN gates v1.0 DLVR-02 (auto-assign nearest available courier on orders.created).
+	// Default OFF: v2.0 manual-courier-selection product — couriers accept orders explicitly via AcceptOrder.
+	// Set to "true" to restore legacy auto-assignment.
+	autoAssign := os.Getenv("DELIVERY_AUTO_ASSIGN") == "true"
+	svc := service.NewDeliveryService(repo, producer, ratingRepo, orderClient, autoAssign)
 
 	// Setup HTTP router
 	r := chi.NewRouter()

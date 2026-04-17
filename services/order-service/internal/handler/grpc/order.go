@@ -14,18 +14,21 @@ import (
 	orderv1 "github.com/mozgovojnikita/delivery-tracker/gen/order/v1"
 	pkgerrors "github.com/mozgovojnikita/delivery-tracker/pkg/errors"
 	"github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/domain"
+	"github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/repository"
 	"github.com/mozgovojnikita/delivery-tracker/services/order-service/internal/service"
 )
 
 // OrderHandler implements orderv1.OrderServiceServer.
 type OrderHandler struct {
 	orderv1.UnimplementedOrderServiceServer
-	svc *service.OrderService
+	svc      *service.OrderService
+	userRepo repository.UserRepository
 }
 
 // NewOrderHandler creates a new gRPC order handler.
-func NewOrderHandler(svc *service.OrderService) *OrderHandler {
-	return &OrderHandler{svc: svc}
+// userRepo is optional (nil-safe): if nil, GetUsersByIDs returns empty results.
+func NewOrderHandler(svc *service.OrderService, userRepo repository.UserRepository) *OrderHandler {
+	return &OrderHandler{svc: svc, userRepo: userRepo}
 }
 
 // CreateOrder creates a new delivery order.
@@ -156,6 +159,87 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, req *orderv1.CancelOrder
 	return &orderv1.CancelOrderResponse{Order: toProtoOrder(order)}, nil
 }
 
+// GetOrdersByIDs returns slim order previews for a list of order IDs.
+// This is an internal-only RPC (no HTTP annotation) used by delivery-service
+// to enrich ListAvailableOrders with total_price and items_count (BKND-02).
+// Max 100 IDs per request to prevent abuse.
+func (h *OrderHandler) GetOrdersByIDs(ctx context.Context, req *orderv1.GetOrdersByIDsRequest) (*orderv1.GetOrdersByIDsResponse, error) {
+	if len(req.GetOrderIds()) == 0 {
+		return &orderv1.GetOrdersByIDsResponse{}, nil
+	}
+	if len(req.GetOrderIds()) > 100 {
+		return nil, status.Error(codes.InvalidArgument, "max 100 ids per request")
+	}
+
+	orders, err := h.svc.GetOrdersByIDs(ctx, req.GetOrderIds())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	previews := make([]*orderv1.OrderPreviewSlim, 0, len(orders))
+	for _, o := range orders {
+		var total float64
+		var count int32
+		var items []*orderv1.OrderItem
+		if len(o.Items) > 0 {
+			type itemJSON struct {
+				Name     string  `json:"name"`
+				Price    float64 `json:"price"`
+				Quantity int32   `json:"quantity"`
+			}
+			var raw []itemJSON
+			if err := json.Unmarshal(o.Items, &raw); err == nil {
+				for _, item := range raw {
+					total += item.Price * float64(item.Quantity)
+					count += item.Quantity
+					items = append(items, &orderv1.OrderItem{
+						Name:     item.Name,
+						Quantity: item.Quantity,
+						Price:    item.Price,
+					})
+				}
+			}
+		}
+		previews = append(previews, &orderv1.OrderPreviewSlim{
+			OrderId:         o.ID,
+			TotalPrice:      total,
+			ItemsCount:      count,
+			DeliveryAddress: o.DeliveryAddress,
+			Items:           items,
+		})
+	}
+	return &orderv1.GetOrdersByIDsResponse{Orders: previews}, nil
+}
+
+// GetUsersByIDs is an internal bulk-fetch RPC (RATE-05). No HTTP annotation.
+// Loops over IDs using existing UserRepository.GetByID (ВКР-acceptable; courier
+// count is low — see RESEARCH Open Q1). Missing users are skipped, not an error.
+func (h *OrderHandler) GetUsersByIDs(ctx context.Context, req *orderv1.GetUsersByIDsRequest) (*orderv1.GetUsersByIDsResponse, error) {
+	if len(req.GetUserIds()) == 0 {
+		return &orderv1.GetUsersByIDsResponse{}, nil
+	}
+	if len(req.GetUserIds()) > 100 {
+		return nil, status.Error(codes.InvalidArgument, "max 100 ids per request")
+	}
+	if h.userRepo == nil {
+		return &orderv1.GetUsersByIDsResponse{}, nil
+	}
+	users := make([]*orderv1.UserSlim, 0, len(req.GetUserIds()))
+	for _, id := range req.GetUserIds() {
+		u, err := h.userRepo.GetByID(ctx, id)
+		if err != nil {
+			continue // skip not-found / lookup errors — caller treats absence as 404
+		}
+		users = append(users, &orderv1.UserSlim{
+			Id:        u.ID,
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			Role:      string(u.Role),
+		})
+	}
+	return &orderv1.GetUsersByIDsResponse{Users: users}, nil
+}
+
 // GetHealth returns a health status response.
 func (h *OrderHandler) GetHealth(ctx context.Context, req *orderv1.HealthRequest) (*orderv1.HealthResponse, error) {
 	return &orderv1.HealthResponse{Status: "ok"}, nil
@@ -200,6 +284,7 @@ func toProtoOrder(o *domain.Order) *orderv1.Order {
 		PaymentMethod: o.PaymentMethod,
 		CreatedAt:     timestamppb.New(o.CreatedAt),
 		UpdatedAt:     timestamppb.New(o.UpdatedAt),
+		DeliveryId:    o.DeliveryID, // BKND-04 D-10: empty when no delivery / delivery-service down
 	}
 }
 

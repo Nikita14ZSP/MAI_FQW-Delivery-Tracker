@@ -16,14 +16,14 @@ import (
 
 // mockUserRepository is a manual mock implementing repository.UserRepository.
 type mockUserRepository struct {
-	createFn     func(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error)
+	createFn     func(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error)
 	getByEmailFn func(ctx context.Context, email string) (*domain.User, error)
 	getByIDFn    func(ctx context.Context, id string) (*domain.User, error)
 }
 
-func (m *mockUserRepository) Create(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error) {
+func (m *mockUserRepository) Create(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error) {
 	if m.createFn != nil {
-		return m.createFn(ctx, email, passwordHash, firstName, lastName, role)
+		return m.createFn(ctx, email, passwordHash, firstName, lastName, phone, role)
 	}
 	return nil, nil
 }
@@ -68,13 +68,14 @@ func newTestAuthService(t *testing.T, repo *mockUserRepository) (*service.AuthSe
 
 func TestAuthService_Register_Success(t *testing.T) {
 	repo := &mockUserRepository{
-		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error) {
+		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error) {
 			return &domain.User{
 				ID:           "user-1",
 				Email:        email,
 				PasswordHash: passwordHash,
 				FirstName:    firstName,
 				LastName:     lastName,
+				Phone:        phone,
 				Role:         role,
 				CreatedAt:    time.Now(),
 				UpdatedAt:    time.Now(),
@@ -112,7 +113,7 @@ func TestAuthService_Register_Success(t *testing.T) {
 
 func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	repo := &mockUserRepository{
-		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error) {
+		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error) {
 			return nil, pkgerrors.ErrAlreadyExists
 		},
 	}
@@ -127,6 +128,63 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 
 	if !errors.Is(err, pkgerrors.ErrAlreadyExists) {
 		t.Errorf("expected ErrAlreadyExists, got: %v", err)
+	}
+}
+
+func TestAuthService_Register_Courier(t *testing.T) {
+	repo := &mockUserRepository{
+		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error) {
+			return &domain.User{
+				ID:           "user-courier-1",
+				Email:        email,
+				PasswordHash: passwordHash,
+				FirstName:    firstName,
+				LastName:     lastName,
+				Phone:        phone,
+				Role:         role,
+				CreatedAt:    time.Now(),
+				UpdatedAt:    time.Now(),
+			}, nil
+		},
+	}
+	svc, _, _ := newTestAuthService(t, repo)
+
+	tokens, user, err := svc.Register(context.Background(), service.RegisterInput{
+		Email:     "courier@example.com",
+		Password:  "securepassword123",
+		FirstName: "Курьер",
+		LastName:  "Один",
+		Role:      domain.RoleCourier,
+	})
+
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if tokens == nil || tokens.AccessToken == "" {
+		t.Error("expected token pair")
+	}
+	if user == nil {
+		t.Fatal("expected user, got nil")
+	}
+	if user.Role != domain.RoleCourier {
+		t.Errorf("expected role courier, got %s", user.Role)
+	}
+}
+
+func TestAuthService_Register_InvalidRole(t *testing.T) {
+	repo := &mockUserRepository{}
+	svc, _, _ := newTestAuthService(t, repo)
+
+	_, _, err := svc.Register(context.Background(), service.RegisterInput{
+		Email:     "admin@example.com",
+		Password:  "securepassword123",
+		FirstName: "Admin",
+		LastName:  "User",
+		Role:      domain.Role("admin"),
+	})
+
+	if !errors.Is(err, pkgerrors.ErrInvalidInput) {
+		t.Errorf("expected ErrInvalidInput for role=admin, got: %v", err)
 	}
 }
 
@@ -231,13 +289,14 @@ func TestAuthService_RefreshToken_Success(t *testing.T) {
 	hash, _ := domain.HashPassword(password)
 
 	repo := &mockUserRepository{
-		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName string, role domain.Role) (*domain.User, error) {
+		createFn: func(ctx context.Context, email, passwordHash, firstName, lastName, phone string, role domain.Role) (*domain.User, error) {
 			return &domain.User{
 				ID:           "user-4",
 				Email:        email,
 				PasswordHash: passwordHash,
 				FirstName:    firstName,
 				LastName:     lastName,
+				Phone:        phone,
 				Role:         role,
 				CreatedAt:    time.Now(),
 				UpdatedAt:    time.Now(),

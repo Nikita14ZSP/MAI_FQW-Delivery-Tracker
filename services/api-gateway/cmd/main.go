@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	deliveryv1 "github.com/mozgovojnikita/delivery-tracker/gen/delivery/v1"
+	menuv1 "github.com/mozgovojnikita/delivery-tracker/gen/menu/v1"
 	notificationv1 "github.com/mozgovojnikita/delivery-tracker/gen/notification/v1"
 	orderv1 "github.com/mozgovojnikita/delivery-tracker/gen/order/v1"
 	trackingv1 "github.com/mozgovojnikita/delivery-tracker/gen/tracking/v1"
@@ -147,6 +148,13 @@ func main() {
 		slog.Error("register order grpc-gateway handler failed", "err", err)
 		os.Exit(1)
 	}
+	// MenuService lives in the same order-service process — reuse orderConn.
+	if err := menuv1.RegisterMenuServiceHandlerClient(
+		context.Background(), gwMux, menuv1.NewMenuServiceClient(orderConn),
+	); err != nil {
+		slog.Error("register menu grpc-gateway handler failed", "err", err)
+		os.Exit(1)
+	}
 	if err := deliveryv1.RegisterDeliveryServiceHandlerClient(
 		context.Background(), gwMux, deliveryv1.NewDeliveryServiceClient(deliveryConn),
 	); err != nil {
@@ -173,8 +181,9 @@ func main() {
 
 	// Chi router with middleware chain
 	r := chi.NewRouter()
+	r.Use(pkgmw.Metrics)
 	r.Use(pkgmw.TraceID)
-	r.Use(gatewaymw.RateLimit(redisClient, 1000, 5000))
+	r.Use(gatewaymw.RateLimit(redisClient, 100000, 100000))
 	r.Use(gatewaymw.AuthMiddleware(jwtSecret, "/v1/auth/", "/health", "/swagger/", "/metrics"))
 
 	// Health + Swagger + Metrics

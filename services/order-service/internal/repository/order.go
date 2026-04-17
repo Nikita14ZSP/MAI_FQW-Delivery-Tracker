@@ -15,6 +15,7 @@ import (
 type OrderRepository interface {
 	Create(ctx context.Context, input domain.CreateOrderInput) (*domain.Order, error)
 	GetByID(ctx context.Context, id string) (*domain.Order, error)
+	GetByIDs(ctx context.Context, ids []string) ([]*domain.Order, error)
 	ListByUserID(ctx context.Context, userID string, status *domain.OrderStatus, page, pageSize int) ([]*domain.Order, int, error)
 	UpdateStatus(ctx context.Context, id string, status domain.OrderStatus, cancelReason string) (*domain.Order, error)
 }
@@ -79,6 +80,46 @@ func (r *orderRepository) GetByID(ctx context.Context, id string) (*domain.Order
 		o.CancelReason = *cancelReason
 	}
 	return o, nil
+}
+
+// GetByIDs retrieves multiple orders by their UUIDs in a single query.
+// Returns only the orders that exist; missing IDs are silently ignored.
+// Used by delivery-service's GetOrdersByIDs bulk-fetch RPC (BKND-02).
+func (r *orderRepository) GetByIDs(ctx context.Context, ids []string) ([]*domain.Order, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	const query = `
+		SELECT id, user_id, status, delivery_address, COALESCE(delivery_lat, 0), COALESCE(delivery_lng, 0), items, contact_phone, payment_method, cancel_reason, created_at, updated_at
+		FROM orders
+		WHERE id = ANY($1::uuid[])`
+
+	rows, err := r.pool.Query(ctx, query, ids)
+	if err != nil {
+		return nil, fmt.Errorf("get orders by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var orders []*domain.Order
+	for rows.Next() {
+		o := &domain.Order{}
+		var cancelReason *string
+		if err := rows.Scan(
+			&o.ID, &o.UserID, &o.Status, &o.DeliveryAddress, &o.DeliveryLat, &o.DeliveryLng, &o.Items,
+			&o.ContactPhone, &o.PaymentMethod, &cancelReason,
+			&o.CreatedAt, &o.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan order: %w", err)
+		}
+		if cancelReason != nil {
+			o.CancelReason = *cancelReason
+		}
+		orders = append(orders, o)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate orders by ids: %w", err)
+	}
+	return orders, nil
 }
 
 // ListByUserID retrieves a paginated list of orders for a user.
