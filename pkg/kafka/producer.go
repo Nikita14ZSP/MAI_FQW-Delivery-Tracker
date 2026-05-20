@@ -21,9 +21,13 @@ type kafkaProducer struct {
 func NewProducer(brokers string) EventPublisher {
 	return &kafkaProducer{
 		writer: &kafkago.Writer{
-			Addr:         kafkago.TCP(strings.Split(brokers, ",")...),
-			Balancer:     &kafkago.LeastBytes{},
-			RequiredAcks: kafkago.RequireOne,
+			Addr:     kafkago.TCP(strings.Split(brokers, ",")...),
+			Balancer: &kafkago.LeastBytes{},
+			// RequireAll: leader waits for all in-sync replicas to acknowledge before returning success.
+			// Trades a small latency cost for durability — events survive a broker failure mid-replication.
+			// With our single-broker dev cluster this is effectively the same as RequireOne, but it future-proofs
+			// the deployment for a multi-broker cluster without code changes.
+			RequiredAcks: kafkago.RequireAll,
 			Async:        false,
 		},
 	}

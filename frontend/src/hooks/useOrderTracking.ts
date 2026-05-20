@@ -93,6 +93,11 @@ function dispatchMessage(
  * URL contract: ws[s]://host/ws/orders/{orderId}?token=...
  * — matches nginx /ws/ proxy_pass + api-gateway /ws/orders/{order_id} route.
  *
+ * Security note: the gateway also accepts ?ticket=<short-lived JWT, 60s, purpose=ws>
+ * issued by POST /v1/ws-ticket. Migrating this hook to the ticket flow shrinks the
+ * URL-leak window from the 15-min access-token TTL to ~60 s. Deferred to v3 — the
+ * change makes connect() async and ripples through every hook test.
+ *
  * See 09-CONTEXT.md D-04..D-11, D-35 and 09-RESEARCH.md §Pattern 1/§Pattern 5.
  */
 export function useOrderTracking(orderId: string): UseOrderTrackingResult {

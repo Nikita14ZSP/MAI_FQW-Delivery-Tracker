@@ -124,12 +124,17 @@ func (h *Hub) listenRedis(ctx context.Context, orderID string) {
 
 // broadcast sends data to all local WebSocket connections for the given order.
 // Uses non-blocking send to avoid blocking if a client is slow — drops message for slow clients.
+// Snapshots the client set under the read lock to avoid a concurrent map iteration / Unsubscribe race.
 func (h *Hub) broadcast(orderID string, data []byte) {
 	h.mu.RLock()
-	clients := h.connections[orderID]
+	conns := h.connections[orderID]
+	clients := make([]*Client, 0, len(conns))
+	for c := range conns {
+		clients = append(clients, c)
+	}
 	h.mu.RUnlock()
 
-	for client := range clients {
+	for _, client := range clients {
 		select {
 		case client.send <- data:
 		default:

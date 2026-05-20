@@ -18,9 +18,12 @@ const (
 
 // Claims mirrors the JWT claims structure used by order-service auth.
 // Gateway does NOT import order-service — it defines its own identical struct.
+// Purpose is set to "ws" for short-lived tickets issued by POST /v1/ws-ticket;
+// regular access tokens leave it empty.
 type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID  string `json:"user_id"`
+	Role    string `json:"role"`
+	Purpose string `json:"purpose,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -39,12 +42,19 @@ func AuthMiddleware(jwtSecret string, skipPaths ...string) func(http.Handler) ht
 				}
 			}
 
-			// WebSocket connections pass JWT via ?token= query parameter (D-03, D-12).
-			// Browsers cannot set Authorization headers for WebSocket upgrades.
+			// WebSocket connections pass credentials via the URL — browsers cannot set
+			// Authorization headers on Upgrade requests. Preferred: short-lived ticket
+			// (?ticket=, 60s TTL, purpose=ws claim) issued by POST /v1/ws-ticket.
+			// Legacy: access token (?token=) — still accepted so older clients/tooling
+			// (courier-sim, integration tests) keep working.
 			if r.Header.Get("Upgrade") == "websocket" {
-				tokenString := r.URL.Query().Get("token")
+				tokenString := r.URL.Query().Get("ticket")
+				requirePurposeWS := tokenString != ""
 				if tokenString == "" {
-					http.Error(w, `{"error":"missing token query parameter for websocket"}`, http.StatusUnauthorized)
+					tokenString = r.URL.Query().Get("token")
+				}
+				if tokenString == "" {
+					http.Error(w, `{"error":"missing ticket query parameter for websocket"}`, http.StatusUnauthorized)
 					return
 				}
 				claims := &Claims{}
@@ -56,6 +66,12 @@ func AuthMiddleware(jwtSecret string, skipPaths ...string) func(http.Handler) ht
 				})
 				if err != nil || !token.Valid {
 					http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
+					return
+				}
+				if requirePurposeWS && claims.Purpose != "ws" {
+					// A token presented via ?ticket= must be a ws-ticket. This blocks
+					// long-lived access tokens from being smuggled through the preferred path.
+					http.Error(w, `{"error":"ticket has wrong purpose"}`, http.StatusUnauthorized)
 					return
 				}
 				ctx := context.WithValue(r.Context(), ctxUserID, claims.UserID)

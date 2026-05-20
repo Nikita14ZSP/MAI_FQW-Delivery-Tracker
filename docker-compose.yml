@@ -83,7 +83,7 @@ services:
       ENV: development
       PORT: "8080"
       GRPC_PORT: "9090"
-      JWT_SECRET: dev-secret-change-in-production  # NOT for production use
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}  # Override via .env in non-dev environments
       DELIVERY_SERVICE_GRPC: delivery-service:9090   # BKND-04: lazy gRPC client; no depends_on (circular w/ delivery-service); graceful when unreachable
     depends_on:
       postgres:
@@ -208,7 +208,7 @@ services:
       ENV: development
       PORT: "8080"
       GRPC_PORT: "9090"
-      JWT_SECRET: dev-secret-change-in-production  # Same secret for token validation
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}  # Same secret for token validation; override via .env
       ORDER_SERVICE_GRPC: order-service:9090
       ORDER_SERVICE_HTTP: http://order-service:8080
       DELIVERY_SERVICE_GRPC: delivery-service:9090

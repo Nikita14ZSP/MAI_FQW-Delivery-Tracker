@@ -198,7 +198,13 @@ func main() {
 		r.Post("/register", authProxyHandler.Register)
 		r.Post("/login", authProxyHandler.Login)
 		r.Post("/refresh", authProxyHandler.RefreshToken)
-})
+	})
+
+	// Short-lived WebSocket ticket. Sits outside /v1/auth/ so AuthMiddleware runs
+	// and the caller must already hold a valid access token. The ticket signed here
+	// is what the frontend places in ?ticket= when opening the WS connection —
+	// keeps long-lived access tokens out of URLs (and proxy/Referer logs).
+	r.Post("/v1/ws-ticket", authhandler.NewWSTicketHandler(jwtSecret))
 
 	// WebSocket proxy to tracking-service (D-12).
 	// grpc-gateway cannot proxy WebSocket — use httputil.ReverseProxy.
